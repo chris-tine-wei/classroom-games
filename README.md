@@ -12,7 +12,7 @@ These are three vocabulary games I built for a small online ESL class: three stu
 
 ## Why games
 
-My students were more engaged when the lesson was a game. They got competitive over the scoreboard and started arguing about points. One student finds it hard to put his thoughts into spoken sentences, and that bit of competition got him talking. I design my data visualizations on the same principle: people understand what they're drawn into.
+I noticed pretty quickly that my students were more engaged when vocabulary review became a game. They got competitive over the scoreboard, argued about points, and were much more willing to speak up. That mattered especially for one student who often knew what he wanted to say but struggled to put it into a full English sentence. Give him a few points to compete for, though, and he was much more willing to try.
 
 ## How they're built
 
