@@ -1,6 +1,6 @@
 # Classroom Games
 
-These are three vocabulary games I built for a small online ESL class: three students aged 10 to 13, over five months. Each game is built around one chapter of the novel we read together.
+These are three vocabulary games I built for a small online ESL class: three students aged 10 to 14, over five months. Each game is built around one chapter of the novel we read together.
 
 **Play them:** https://chris-tine-wei.github.io/classroom-games/
 
