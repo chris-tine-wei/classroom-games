@@ -12,7 +12,7 @@ These are three vocabulary games I built for a small online ESL class: three stu
 
 ## Why games
 
-My students were more engaged when the lesson was a game. The competitive ones started arguing over the scoreboard. The quiet one started answering once it was a game. I design my data visualizations on the same principle: people understand what they're drawn into.
+My students were more engaged when the lesson was a game. They got competitive over the scoreboard and started arguing about points. One student finds it hard to put his thoughts into spoken sentences, and that bit of competition got him talking. I design my data visualizations on the same principle: people understand what they're drawn into.
 
 ## How they're built
 
