@@ -1,0 +1,1534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--HEAD-START-->
+<title>Tomodachi Hogwarts</title>
+<style>
+/* ============================================================
+   TOMODACHI HOGWARTS: SURVIVE HALLOWEEN
+   Single-file, offline-safe (no external fonts, scripts or images).
+   Deliberately single-theme: a night-time lantern screen.
+   ============================================================ */
+:root{
+  --ink:        #17101F;   /* bruised plum-black ground */
+  --ink-2:      #221630;   /* raised surface */
+  --ink-3:      #2E1F40;   /* card */
+  --moon:       #C3CEEC;   /* cold moonlight - body text */
+  --moon-dim:   #8A93B4;   /* secondary text */
+  --candle:     #FFC24D;   /* candle amber - primary accent */
+  --candle-hot: #FFE1A0;
+  --ember:      #FF6B35;   /* pumpkin ember - action */
+  --spell:      #7BE0C0;   /* mint spell-glow - reveal */
+  --hair:       #6B4E22;   /* thin gold rules only */
+  --p1:         #E03B4A;   /* Pip - scarlet */
+  --p2:         #3D7BE0;   /* Bean - cobalt */
+  --both:       #C77DFF;
+
+  --display: "Trebuchet MS", "Segoe UI", Verdana, "DejaVu Sans", sans-serif;
+  --body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --book: Georgia, "Iowan Old Style", "Times New Roman", serif;
+
+  --r: 14px;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:
+    radial-gradient(1100px 620px at 50% -12%, #3A2350 0%, rgba(58,35,80,0) 62%),
+    radial-gradient(720px 460px at 88% 108%, #35203F 0%, rgba(53,32,63,0) 60%),
+    var(--ink);
+  color:var(--moon);
+  font-family:var(--body);
+  overflow:hidden;
+}
+button{font-family:inherit;}
+:focus-visible{outline:3px solid var(--candle); outline-offset:3px; border-radius:6px;}
+
+/* ---------- ambient sparks ---------- */
+#sparks{position:fixed; inset:0; pointer-events:none; z-index:0;}
+.spark{
+  position:absolute; width:4px; height:4px; border-radius:50%;
+  background:var(--candle); opacity:.5;
+  box-shadow:0 0 10px 2px rgba(255,194,77,.55);
+  animation:drift linear infinite;
+}
+@keyframes drift{
+  0%{transform:translateY(12vh) scale(.6); opacity:0;}
+  15%{opacity:.65;}
+  85%{opacity:.5;}
+  100%{transform:translateY(-108vh) scale(1); opacity:0;}
+}
+
+/* ---------- shell ---------- */
+.shell{
+  position:relative; z-index:1;
+  height:100dvh; display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+}
+
+/* ---------- top rail ---------- */
+.rail{
+  display:flex; align-items:center; gap:18px;
+  padding:10px clamp(14px,2.4vw,30px);
+  border-bottom:1px solid rgba(107,78,34,.55);
+  background:linear-gradient(180deg, rgba(34,22,48,.92), rgba(34,22,48,.35));
+}
+.mark{
+  font-family:var(--display); font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; font-size:clamp(11px,1.15vw,14px);
+  color:var(--candle); white-space:nowrap;
+}
+.mark small{display:block; letter-spacing:.22em; font-size:9px; color:var(--moon-dim); font-weight:400;}
+.scenes{display:flex; align-items:center; gap:6px; margin-left:auto;}
+.scene-chip{
+  width:38px; height:38px; display:grid; place-items:center;
+  font-size:19px; line-height:1; border-radius:11px;
+  background:rgba(255,255,255,.045); border:1px solid rgba(195,206,236,.14);
+  filter:grayscale(1) opacity(.4); transition:all .35s ease;
+}
+.scene-chip.done{filter:none; opacity:.7; border-color:rgba(107,78,34,.8);}
+.scene-chip.now{
+  filter:none; opacity:1; transform:scale(1.14);
+  border-color:var(--candle); background:rgba(255,194,77,.14);
+  box-shadow:0 0 0 3px rgba(255,194,77,.13), 0 0 18px rgba(255,194,77,.3);
+}
+.arrow{color:var(--moon-dim); font-size:12px;}
+.counter{
+  font-variant-numeric:tabular-nums; font-size:12px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--moon-dim); white-space:nowrap;
+}
+.counter b{color:var(--candle); font-size:15px;}
+.meter{width:clamp(70px,10vw,150px); height:7px; border-radius:99px; background:rgba(255,255,255,.09); overflow:hidden;}
+.sound{
+  width:36px; height:36px; flex:none; cursor:pointer; border-radius:10px; font-size:16px;
+  background:rgba(255,255,255,.05); color:var(--moon);
+  border:1px solid rgba(195,206,236,.22); transition:all .2s ease;
+}
+.sound:hover{border-color:var(--candle); background:rgba(255,194,77,.12);}
+.sound.off{opacity:.45;}
+.meter i{display:block; height:100%; width:0%; border-radius:99px;
+  background:linear-gradient(90deg,var(--ember),var(--candle)); transition:width .5s cubic-bezier(.3,1.4,.5,1);}
+
+/* ---------- stage ---------- */
+.stage{
+  display:grid; grid-template-columns:minmax(0,1.06fr) minmax(0,1fr);
+  gap:clamp(10px,1.6vw,26px);
+  padding:clamp(10px,1.6vw,22px) clamp(14px,2.4vw,30px);
+  min-height:0;
+}
+
+/* ----- diorama (left) ----- */
+.diorama{
+  position:relative; border-radius:var(--r); min-height:0; overflow:hidden;
+  border:1px solid rgba(107,78,34,.6);
+  background:linear-gradient(180deg,#241738 0%, #1B1128 100%);
+  display:grid; grid-template-rows:auto minmax(0,1fr);
+}
+.set-label{
+  padding:7px 14px; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--candle); background:rgba(255,194,77,.08);
+  border-bottom:1px solid rgba(107,78,34,.5); font-weight:600;
+}
+.set{position:relative; min-height:0;}
+#backdrop{position:absolute; inset:0; width:100%; height:100%;}
+.cast{
+  position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center;
+  gap:clamp(4px,2vw,40px); padding:0 10px 4px;
+}
+.actor{position:relative; display:flex; flex-direction:column; align-items:center; min-width:0;}
+.actor svg{display:block; height:clamp(150px,26vh,250px); width:auto; overflow:visible;}
+.bob{animation:bob 3.1s ease-in-out infinite;}
+.bob.b2{animation-delay:-1.5s;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+.shake{animation:shake .42s ease-in-out 2;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px) rotate(-1.6deg);}75%{transform:translateX(5px) rotate(1.6deg);}}
+.pop{animation:pop .5s cubic-bezier(.2,1.6,.4,1);}
+@keyframes pop{0%{transform:scale(.84);}60%{transform:scale(1.07);}100%{transform:scale(1);}}
+
+.bubble{
+  position:absolute; bottom:calc(100% - 4px); left:50%; z-index:2;
+  --nudge:0px;
+  opacity:0; transform:translateX(calc(-50% + var(--nudge))) translateY(6px) scale(.9);
+  transform-origin:bottom center;
+  animation:bubbleIn .34s cubic-bezier(.2,1.5,.45,1) forwards;
+  background:#F3EEF9; color:#221630; font-size:clamp(10px,1.05vw,12.5px); font-weight:600;
+  padding:6px 11px; border-radius:11px; text-align:center; line-height:1.3;
+  width:max-content; max-width:min(200px, 30vw);
+  box-shadow:0 5px 16px rgba(0,0,0,.45);
+}
+.bubble::after{content:""; position:absolute; top:100%; left:50%; margin-left:-6px;
+  border:6px solid transparent; border-top-color:#F3EEF9;}
+@keyframes bubbleIn{
+  to{opacity:1; transform:translateX(calc(-50% + var(--nudge))) translateY(0) scale(1);}
+}
+/* Pip shouts, Bean states facts - the bubbles should look like it */
+.bubble.loud{background:#FFE9C7; font-weight:800; letter-spacing:.01em;}
+.bubble.loud::after{border-top-color:#FFE9C7;}
+.bubble.flat{background:#E4EAF7; font-weight:600; font-family:var(--body);}
+.bubble.flat::after{border-top-color:#E4EAF7;}
+/* whoever speaks first sits higher, so the exchange reads top-to-bottom */
+.bubble.first{bottom:calc(100% + 34px); z-index:3;}
+.nameplate{
+  margin-top:5px; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase;
+  font-weight:700; padding:3px 11px; border-radius:99px; border:1px solid; white-space:nowrap;
+}
+.nameplate em{font-style:normal; opacity:.72; font-weight:400; letter-spacing:.08em;}
+.nameplate{color:var(--candle); border-color:rgba(255,194,77,.5); background:rgba(255,194,77,.10);}
+.turns{font-size:9.5px; letter-spacing:.12em; color:var(--moon-dim); margin-top:3px; font-variant-numeric:tabular-nums;}
+.spot{
+  position:absolute; inset:auto 0 0 0; height:64%;
+  background:radial-gradient(60% 100% at 50% 100%, rgba(255,194,77,.2), rgba(255,194,77,0) 72%);
+  pointer-events:none;
+}
+.actor.speaking::before{
+  content:""; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
+  width:118%; height:30px; border-radius:50%;
+  background:radial-gradient(ellipse, rgba(255,194,77,.42), rgba(255,194,77,0) 70%);
+}
+
+/* ----- panel (right) ----- */
+.panel{
+  display:flex; flex-direction:column; gap:clamp(7px,1.1vh,13px); min-height:0;
+}
+.turncard{
+  display:flex; align-items:center; gap:11px;
+  padding:10px 15px; border-radius:var(--r);
+  font-family:var(--display); font-weight:700; letter-spacing:.06em;
+  font-size:clamp(14px,1.7vw,21px); text-transform:uppercase;
+  border:2px solid; background:rgba(255,255,255,.04);
+}
+.turncard.p1{color:#FF8F98; border-color:var(--p1); box-shadow:inset 0 0 34px rgba(224,59,74,.2);}
+.turncard.p2{color:#8FBAFF; border-color:var(--p2); box-shadow:inset 0 0 34px rgba(61,123,224,.2);}
+.turncard.both{color:#E0BBFF; border-color:var(--both); box-shadow:inset 0 0 34px rgba(199,125,255,.18);}
+.mic{font-size:1.15em;}
+
+.scroll{
+  flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;
+  display:flex; flex-direction:column; gap:clamp(7px,1.1vh,13px);
+  padding-right:4px; scrollbar-width:thin; scrollbar-color:var(--hair) transparent;
+}
+.card{
+  border-radius:var(--r); padding:clamp(11px,1.5vw,18px);
+  background:var(--ink-3); border:1px solid rgba(107,78,34,.55);
+}
+.card.setup{background:linear-gradient(180deg,#31214A,#281a3c);}
+.setup p{margin:0; font-size:clamp(13px,1.42vw,17.5px); line-height:1.5; color:#E6E2F2;}
+.ask{
+  margin:11px 0 0; font-family:var(--display); font-weight:700;
+  font-size:clamp(14px,1.62vw,20px); color:var(--candle); line-height:1.3;
+  text-wrap:balance;
+}
+
+/* clue ladder */
+.ladder{display:flex; gap:7px;}
+.rung{
+  flex:1; padding:6px 4px 5px; border-radius:9px; text-align:center;
+  font-size:9.5px; letter-spacing:.11em; text-transform:uppercase; font-weight:700;
+  border:1px solid rgba(195,206,236,.16); color:var(--moon-dim);
+  background:rgba(255,255,255,.03); transition:all .3s ease;
+}
+.rung b{display:block; font-size:14px; margin-bottom:1px; font-family:var(--display);}
+.rung.on{color:var(--candle); border-color:var(--candle); background:rgba(255,194,77,.13);
+  box-shadow:0 0 14px rgba(255,194,77,.2);}
+.rung.spent{color:var(--moon-dim); border-color:rgba(107,78,34,.8); opacity:.62;}
+
+.clue{border-left:4px solid var(--candle); animation:slidein .32s ease;}
+.clue .lbl{font-size:10px; letter-spacing:.19em; text-transform:uppercase; color:var(--candle); font-weight:700;}
+.clue p{margin:6px 0 0; font-size:clamp(13px,1.4vw,17px); line-height:1.45; color:#EDE8F6;}
+.chapter{border-left-color:var(--spell); background:#22183A;}
+.chapter .lbl{color:var(--spell);}
+.blank{
+  display:inline-block; min-width:5.5em; text-align:center; font-style:normal;
+  font-weight:700; letter-spacing:.06em; color:var(--candle);
+  border-bottom:2px solid var(--candle); line-height:1.1;
+}
+.blank.filled{
+  min-width:0; border-bottom-color:transparent; color:var(--candle-hot);
+  background:rgba(255,194,77,.18); border-radius:5px; padding:0 5px;
+  font-style:italic; animation:fillIn .45s ease;
+}
+@keyframes fillIn{ from{ background:rgba(255,194,77,.7); } to{ background:rgba(255,194,77,.18); } }
+.chapter blockquote{
+  margin:7px 0 0; font-family:var(--book); font-style:italic;
+  font-size:clamp(13px,1.4vw,17px); line-height:1.5; color:#F0EBFA;
+}
+.cite{margin-top:7px; font-size:10.5px; color:var(--moon-dim); letter-spacing:.05em;}
+@keyframes slidein{from{opacity:0; transform:translateY(-7px);}to{opacity:1; transform:none;}}
+
+.answer{
+  border:2px solid var(--candle); background:linear-gradient(180deg,#3E2A18,#2A1B2E);
+  box-shadow:0 0 34px rgba(255,194,77,.22); animation:slidein .34s ease;
+}
+.answer .word{
+  font-family:var(--display); font-weight:700; letter-spacing:.03em;
+  font-size:clamp(28px,4.4vw,54px); line-height:1; color:var(--candle-hot);
+  text-shadow:0 0 26px rgba(255,194,77,.5); text-wrap:balance;
+}
+.answer .pos{
+  display:inline-block; margin:9px 0 0; font-size:11px; letter-spacing:.17em;
+  text-transform:uppercase; font-weight:700; color:var(--ink);
+  background:var(--candle); padding:3px 10px; border-radius:99px;
+}
+.answer .def{margin:9px 0 0; font-size:clamp(13px,1.45vw,18px); line-height:1.45; color:#F5EFE2;}
+.wordnote{
+  margin:13px 0 0; padding:11px 13px; border-radius:10px;
+  background:rgba(123,224,192,.10); border:1px solid rgba(123,224,192,.42);
+}
+.wordnote .lbl{
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+  font-weight:700; color:var(--spell);
+}
+.wordnote p{
+  margin:7px 0 0; font-size:clamp(12.5px,1.28vw,15.5px); line-height:1.5; color:#E8F3EF;
+}
+.wordnote b{color:var(--spell);}
+.answer .conseq{
+  margin:11px 0 0; padding-top:10px; border-top:1px dashed rgba(255,194,77,.4);
+  font-size:clamp(12.5px,1.32vw,16px); color:var(--candle-hot); font-weight:600;
+}
+
+/* status / news cards */
+.statuscard{
+  border:2px dashed rgba(255,107,53,.6); background:#2B1A2A; text-align:left;
+}
+.statuscard h3{
+  margin:0 0 9px; font-family:var(--display); font-size:clamp(15px,1.9vw,23px);
+  letter-spacing:.05em; color:var(--ember); text-transform:uppercase;
+}
+.statuscard li{margin:0 0 6px; font-size:clamp(13px,1.4vw,17px); line-height:1.4; color:#EFE7F3;}
+.statuscard ul{margin:0; padding-left:19px;}
+.kicker{margin:11px 0 0; font-size:clamp(12.5px,1.3vw,16px); color:var(--candle); font-style:italic;}
+
+/* rapid round */
+.rapid .flash{
+  font-size:clamp(38px,6vw,74px); line-height:1; text-align:center; margin-bottom:8px;
+}
+.rapid .prompt{
+  font-family:var(--display); font-weight:700; text-align:center;
+  font-size:clamp(17px,2.5vw,32px); color:#F1ECF9; line-height:1.25; text-wrap:balance;
+}
+.rapid-badge{
+  display:inline-block; font-size:10px; letter-spacing:.2em; text-transform:uppercase;
+  font-weight:700; color:var(--ember); border:1px solid var(--ember);
+  padding:3px 10px; border-radius:99px; margin-bottom:10px;
+}
+
+/* ---------- control bar ---------- */
+.controls{
+  display:flex; gap:9px; align-items:center; flex-wrap:wrap;
+  padding:11px clamp(14px,2.4vw,30px) 13px;
+  border-top:1px solid rgba(107,78,34,.55);
+  background:linear-gradient(0deg, rgba(34,22,48,.96), rgba(34,22,48,.42));
+}
+.btn{
+  flex:1 1 0; min-width:120px;
+  padding:13px 12px; border-radius:12px; cursor:pointer;
+  font-family:var(--display); font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+  font-size:clamp(12px,1.25vw,15.5px);
+  background:rgba(255,255,255,.05); color:var(--moon);
+  border:1.5px solid rgba(195,206,236,.24);
+  transition:transform .12s ease, background .2s ease, border-color .2s ease, color .2s ease;
+}
+.btn:hover:not(:disabled){background:rgba(255,255,255,.1); border-color:var(--candle); color:var(--candle-hot);}
+.btn:active:not(:disabled){transform:translateY(2px);}
+.btn:disabled{opacity:.26; cursor:not-allowed;}
+.btn kbd{
+  display:inline-block; margin-left:7px; font-family:var(--body); font-size:9.5px;
+  letter-spacing:.06em; padding:1px 5px; border-radius:4px; opacity:.62;
+  border:1px solid currentColor; text-transform:none;
+}
+.btn.primary{
+  flex:1.35 1 0; background:linear-gradient(180deg,var(--ember),#D9481B);
+  border-color:#FF9166; color:#FFF3EA; box-shadow:0 4px 0 #8E2E0F;
+}
+.btn.primary:hover:not(:disabled){background:linear-gradient(180deg,#FF7F4E,#E0501F); color:#fff;}
+.btn.primary:active:not(:disabled){box-shadow:0 1px 0 #8E2E0F;}
+.btn.reveal{border-color:var(--candle); color:var(--candle);}
+
+/* ---------- overlays ---------- */
+.overlay{
+  position:fixed; inset:0; z-index:20; display:grid; place-items:center;
+  padding:24px; text-align:center;
+  background:radial-gradient(900px 620px at 50% 42%, #3D2455 0%, #150E1D 78%);
+}
+.overlay.hide{display:none;}
+.title-wrap{max-width:min(880px,94vw);}
+.eyebrow{font-size:clamp(10px,1.2vw,13px); letter-spacing:.42em; text-transform:uppercase; color:var(--ember); font-weight:700;}
+h1{
+  font-family:var(--display); font-weight:700; margin:14px 0 6px;
+  font-size:clamp(30px,6.4vw,72px); line-height:.98; letter-spacing:-.01em;
+  color:var(--candle-hot); text-shadow:0 0 46px rgba(255,194,77,.4); text-wrap:balance;
+}
+.sub{font-size:clamp(14px,1.9vw,22px); color:var(--moon); margin:0 0 6px; font-style:italic; font-family:var(--book);}
+.howto{
+  margin:20px auto 0; max-width:600px; font-size:clamp(12.5px,1.4vw,16px);
+  line-height:1.6; color:var(--moon-dim);
+}
+.howto b{color:var(--candle);}
+.title-cast{display:flex; justify-content:center; align-items:flex-end; gap:clamp(10px,4vw,60px); margin:14px 0 4px;}
+.title-cast svg{height:clamp(140px,24vh,220px); width:auto; overflow:visible;}
+.start{
+  margin-top:22px; padding:16px 42px; font-size:clamp(14px,1.7vw,19px);
+  border-radius:14px; cursor:pointer;
+  font-family:var(--display); font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  background:linear-gradient(180deg,var(--ember),#D9481B); color:#FFF3EA;
+  border:1.5px solid #FF9166; box-shadow:0 5px 0 #8E2E0F;
+}
+.start:active{transform:translateY(3px); box-shadow:0 2px 0 #8E2E0F;}
+
+/* end screen */
+.bank{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr));
+  gap:7px; margin:20px auto 0; max-width:760px;
+}
+.bank span{
+  padding:8px 6px; border-radius:9px; font-size:12px; font-weight:700;
+  letter-spacing:.07em; text-transform:uppercase;
+  background:rgba(255,194,77,.16); border:1px solid rgba(255,194,77,.55); color:var(--candle-hot);
+}
+.tally{display:flex; justify-content:center; gap:16px; margin-top:20px; flex-wrap:wrap;}
+.tally div{
+  padding:11px 20px; border-radius:12px; border:1.5px solid; font-variant-numeric:tabular-nums;
+}
+.tally .t1{border-color:var(--p1); color:#FF8F98; background:rgba(224,59,74,.12);}
+.tally .t2{border-color:var(--p2); color:#8FBAFF; background:rgba(61,123,224,.12);}
+.tally b{display:block; font-family:var(--display); font-size:26px; line-height:1.1;}
+.tally small{font-size:10px; letter-spacing:.16em; text-transform:uppercase;}
+
+/* scene banner */
+.banner{
+  position:absolute; z-index:5; left:50%; top:16%; transform:translate(-50%,-14px);
+  max-width:92%; padding:12px 26px; border-radius:16px; pointer-events:none; opacity:0;
+  background:rgba(23,16,31,.94); border:2px solid var(--candle);
+  box-shadow:0 0 60px rgba(255,194,77,.4);
+  font-family:var(--display); font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  font-size:clamp(13px,1.9vw,25px); color:var(--candle-hot); white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+}
+.banner.show{animation:bannerIn 1.7s ease forwards;}
+@keyframes bannerIn{
+  0%{opacity:0; transform:translate(-50%,-26px) scale(.94);}
+  16%{opacity:1; transform:translate(-50%,-14px) scale(1);}
+  78%{opacity:1;}
+  100%{opacity:0; transform:translate(-50%,-4px) scale(1.02);}
+}
+
+@media (max-width:900px), (max-height:560px){
+  .stage{grid-template-columns:1fr; grid-template-rows:minmax(140px,30vh) minmax(0,1fr);}
+  .diorama{min-height:0;}
+  .actor svg{height:clamp(96px,17vh,150px);}
+  .bubble{font-size:10.5px; max-width:min(150px,34vw);}
+  .banner{font-size:13px; padding:9px 16px;}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important; animation-delay:0s !important;
+    animation-iteration-count:1 !important; transition-duration:.01ms !important;}
+}
+</style>
+<!--HEAD-END-->
+</head>
+<body>
+<!--BODY-START-->
+<div id="sparks" aria-hidden="true"></div>
+
+<!-- ===================== TITLE ===================== -->
+<div class="overlay" id="titleScreen">
+  <div class="title-wrap">
+    <div class="eyebrow">Harry Potter &amp; the Sorcerer's Stone &middot; Chapter 10</div>
+    <h1>Tomodachi Hogwarts:<br>Survive Halloween</h1>
+    <p class="sub">A Vocabulary Rescue Mission</p>
+    <div class="title-cast" id="titleCast"></div>
+    <p class="howto">
+      Fifteen words from Chapter 10, in the order the chapter tells them.<br>
+      <b>Students speak their answers out loud</b> &mdash; nobody touches the screen but the teacher.
+      Use <b>HINT</b> and <b>CHAPTER CLUE</b> whenever they get stuck, then <b>REVEAL</b>.
+      <br><span style="opacity:.75">Keys: Space / &rarr; = next &nbsp;&middot;&nbsp; H = hint &nbsp;&middot;&nbsp; C = chapter clue &nbsp;&middot;&nbsp; A = answer</span>
+    </p>
+    <button class="start" id="startBtn">Begin the Feast</button>
+  </div>
+</div>
+
+<!-- ===================== END ===================== -->
+<div class="overlay hide" id="endScreen">
+  <div class="title-wrap">
+    <div class="eyebrow">Chapter 10 complete</div>
+    <h1 id="endTitle">Halloween Survived</h1>
+    <p class="sub">All fifteen words rescued from the troll.</p>
+    <div class="tally">
+      <div class="t1"><b id="t1">0</b><small>Player 1 turns</small></div>
+      <div class="t2"><b id="t2">0</b><small>Player 2 turns</small></div>
+    </div>
+    <div class="bank" id="bank"></div>
+    <button class="start" id="againBtn" style="margin-top:26px">Play Again</button>
+  </div>
+</div>
+
+<!-- ===================== GAME ===================== -->
+<div class="shell">
+  <header class="rail">
+    <div class="mark">Tomodachi Hogwarts<small>Survive Halloween</small></div>
+    <div class="scenes" id="sceneChips"></div>
+    <div class="counter">Word <b id="wordNum">1</b> / 15</div>
+    <div class="meter" title="Words rescued"><i id="meterFill"></i></div>
+    <button class="sound" id="btnSound" title="Turn sound on or off" aria-label="Turn sound on or off">🔊</button>
+  </header>
+
+  <main class="stage">
+    <section class="diorama">
+      <div class="set-label" id="setLabel">The Great Hall</div>
+      <div class="set">
+        <svg id="backdrop" viewBox="0 0 400 260" preserveAspectRatio="xMidYMax slice" aria-hidden="true"></svg>
+        <div class="spot"></div>
+        <div class="banner" id="banner"></div>
+        <div class="cast" id="cast"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="turncard p1" id="turnCard"><span class="mic">&#127908;</span><span id="turnText">Player 1, your turn!</span></div>
+      <div class="ladder" id="ladder">
+        <div class="rung on" id="r1"><b>1</b>Scene</div>
+        <div class="rung" id="r2"><b>2</b>Meaning</div>
+        <div class="rung" id="r3"><b>3</b>Chapter</div>
+      </div>
+      <div class="scroll" id="scroll"></div>
+    </section>
+  </main>
+
+  <footer class="controls">
+    <button class="btn" id="btnHint">&#128161; Show Hint<kbd>H</kbd></button>
+    <button class="btn" id="btnChapter">&#128214; Chapter Clue<kbd>C</kbd></button>
+    <button class="btn reveal" id="btnReveal">&#10024; Reveal Answer<kbd>A</kbd></button>
+    <button class="btn primary" id="btnNext">Next<kbd>Space</kbd></button>
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- emoji safety: swap the troll glyph if the OS can't draw it ---------- */
+/* ---------- emoji safety ----------
+   Windows 10 ships no glyph for newer emoji (the troll is Unicode 14, the
+   ladder 13), so they render as empty boxes. Measure each one and fall back
+   to an older glyph when the font can't draw it. */
+var safeEmoji = (function(){
+  var canDraw = null;
+  function probe(){
+    if (canDraw) return canDraw;
+    canDraw = function(){ return true; };
+    try {
+      var c = document.createElement("canvas"); c.width = c.height = 32;
+      var x = c.getContext("2d"); x.font = "20px sans-serif";
+      var tofu = x.measureText("\udbff\udffd").width;   // guaranteed-missing glyph
+      canDraw = function(ch){ return Math.abs(x.measureText(ch).width - tofu) > 0.6; };
+    } catch(e){}
+    return canDraw;
+  }
+  return function(ch, fallback){ return probe()(ch) ? ch : fallback; };
+})();
+
+var TROLL = safeEmoji("\ud83e\uddcc", "\ud83d\udc79");  // troll -> ogre
+
+
+var SKIN = { pip:"#F2C9A0", bean:"#C98D63" };
+
+function eyes(kind, cx1, cx2, cy){
+  var s = "";
+  function dot(x,r,offx,offy){
+    return '<circle cx="'+(x+(offx||0))+'" cy="'+(cy+(offy||0))+'" r="'+r+'" fill="#241A2E"/>';
+  }
+  function white(x,rx,ry){
+    return '<ellipse cx="'+x+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="#fff"/>';
+  }
+  switch(kind){
+    case "happy": // closed upward arcs
+      s = '<path d="M'+(cx1-7)+' '+(cy+2)+' q7 -9 14 0" stroke="#241A2E" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        + '<path d="M'+(cx2-7)+' '+(cy+2)+' q7 -9 14 0" stroke="#241A2E" stroke-width="3" fill="none" stroke-linecap="round"/>';
+      break;
+    case "sparkle":
+      s = white(cx1,8,9)+white(cx2,8,9)+dot(cx1,4.4)+dot(cx2,4.4)
+        + '<circle cx="'+(cx1-2)+'" cy="'+(cy-3)+'" r="2" fill="#fff"/><circle cx="'+(cx2-2)+'" cy="'+(cy-3)+'" r="2" fill="#fff"/>'
+        + '<text x="'+(cx1-14)+'" y="'+(cy-8)+'" font-size="11" fill="#FFC24D">✦</text>'
+        + '<text x="'+(cx2+7)+'" y="'+(cy-8)+'" font-size="11" fill="#FFC24D">✦</text>';
+      break;
+    case "wide": // shock / petrified
+      s = white(cx1,9,11)+white(cx2,9,11)+dot(cx1,3.2)+dot(cx2,3.2);
+      break;
+    case "side": // jealous
+      s = white(cx1,7.5,7)+white(cx2,7.5,7)+dot(cx1,4,4)+dot(cx2,4,4)
+        + '<path d="M'+(cx1-9)+' '+(cy-11)+' l16 4" stroke="#241A2E" stroke-width="2.6" stroke-linecap="round"/>'
+        + '<path d="M'+(cx2+9)+' '+(cy-11)+' l-16 4" stroke="#241A2E" stroke-width="2.6" stroke-linecap="round"/>';
+      break;
+    case "angry":
+      s = white(cx1,7,7)+white(cx2,7,7)+dot(cx1,4)+dot(cx2,4)
+        + '<path d="M'+(cx1-10)+' '+(cy-13)+' l17 6" stroke="#241A2E" stroke-width="3.2" stroke-linecap="round"/>'
+        + '<path d="M'+(cx2+10)+' '+(cy-13)+' l-17 6" stroke="#241A2E" stroke-width="3.2" stroke-linecap="round"/>';
+      break;
+    case "squint": // holding in laughter
+      s = '<path d="M'+(cx1-8)+' '+cy+' q8 6 16 0" stroke="#241A2E" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        + '<path d="M'+(cx2-8)+' '+cy+' q8 6 16 0" stroke="#241A2E" stroke-width="3" fill="none" stroke-linecap="round"/>';
+      break;
+    case "dizzy":
+      s = '<text x="'+(cx1-7)+'" y="'+(cy+6)+'" font-size="17" fill="#241A2E" font-family="sans-serif">×</text>'
+        + '<text x="'+(cx2-7)+'" y="'+(cy+6)+'" font-size="17" fill="#241A2E" font-family="sans-serif">×</text>';
+      break;
+    case "flat":
+      s = '<path d="M'+(cx1-8)+' '+cy+' h16" stroke="#241A2E" stroke-width="3" stroke-linecap="round"/>'
+        + '<path d="M'+(cx2-8)+' '+cy+' h16" stroke="#241A2E" stroke-width="3" stroke-linecap="round"/>';
+      break;
+    default: // normal
+      s = white(cx1,7.5,8.5)+white(cx2,7.5,8.5)+dot(cx1,4.2)+dot(cx2,4.2);
+  }
+  return s;
+}
+
+function mouth(kind, cx, cy){
+  switch(kind){
+    case "beam":
+      return '<path d="M'+(cx-20)+' '+cy+' q20 24 40 0 q-20 8 -40 0 z" fill="#7A2331"/>'
+           + '<path d="M'+(cx-16)+' '+(cy+2)+' q16 6 32 0" fill="#fff" opacity=".92"/>';
+    case "grin":
+      return '<path d="M'+(cx-14)+' '+cy+' q14 16 28 0" stroke="#241A2E" stroke-width="3.4" fill="none" stroke-linecap="round"/>';
+    case "smirk":
+      return '<path d="M'+(cx-12)+' '+(cy+3)+' q12 9 24 -4" stroke="#241A2E" stroke-width="3.2" fill="none" stroke-linecap="round"/>';
+    case "frown":
+      return '<path d="M'+(cx-13)+' '+(cy+7)+' q13 -13 26 0" stroke="#241A2E" stroke-width="3.2" fill="none" stroke-linecap="round"/>';
+    case "o":
+      return '<ellipse cx="'+cx+'" cy="'+(cy+3)+'" rx="8.5" ry="11" fill="#5E1A26"/>';
+    case "wobble":
+      return '<path d="M'+(cx-15)+' '+(cy+3)+' q5 -7 10 0 q5 7 10 0 q5 -7 10 0" stroke="#241A2E" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    case "tight": // suppressing laughter
+      return '<path d="M'+(cx-15)+' '+(cy+2)+' h30" stroke="#241A2E" stroke-width="4" stroke-linecap="round"/>'
+           + '<circle cx="'+(cx-25)+'" cy="'+(cy-2)+'" r="9" fill="#F0A0A0" opacity=".5"/>'
+           + '<circle cx="'+(cx+25)+'" cy="'+(cy-2)+'" r="9" fill="#F0A0A0" opacity=".5"/>';
+    case "shout":
+      return '<path d="M'+(cx-13)+' '+(cy-3)+' q13 -8 26 0 l-4 20 q-9 6 -18 0 z" fill="#5E1A26"/>';
+    default:
+      return '<path d="M'+(cx-10)+' '+cy+' q10 9 20 0" stroke="#241A2E" stroke-width="3.2" fill="none" stroke-linecap="round"/>';
+  }
+}
+
+/* who: 1 = Pip (Gryffindor), 2 = Bean (Ravenclaw) */
+/* who 1 = Harry (black hair, round glasses, scar), 2 = Ron (ginger, freckles).
+   Both are Gryffindor, so the robes match; the faces carry the difference. */
+function character(who, eyeKind, mouthKind, opts){
+  opts = opts || {};
+  var robe   = "#4A3D5E";
+  var scarlet= "#A5283A";
+  var gold   = "#E8C547";
+  var hair   = who === 1 ? "#241A18" : "#C2521B";
+  var skin   = who === 1 ? "#F2C9A0" : "#F0C29A";
+  var tilt   = opts.tilt || opts.hatTilt || 0;
+  var blush  = opts.blush ? '<ellipse cx="40" cy="80" rx="9" ry="6" fill="#E8756F" opacity=".45"/><ellipse cx="100" cy="80" rx="9" ry="6" fill="#E8756F" opacity=".45"/>' : "";
+
+  /* Harry: round glasses over the eyes, and the scar */
+  var glasses = who === 1
+    ? '<g fill="none" stroke="#2A2230" stroke-width="3.2">'
+      + '<circle cx="52" cy="60" r="15"/><circle cx="88" cy="60" r="15"/>'
+      + '<path d="M67 59 h6"/><path d="M37 57 l-11 -3"/><path d="M103 57 l11 -3"/></g>'
+    : "";
+  var scar = who === 1
+    ? '<path d="M48 32 l-5 6 h5 l-5 7" fill="none" stroke="#C0563C" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>'
+    : "";
+  var hairPath = who === 1
+    ? "M24 50 q6 -40 46 -40 q40 0 46 40 q-16 -24 -46 -24 q-30 0 -46 24 z"   /* Harry: fringe sits high, scar shows */
+    : "M24 52 q6 -40 46 -40 q40 0 46 40 q-16 -18 -46 -18 q-30 0 -46 18 z";  /* Ron */
+  /* Ron: freckles across the nose and cheeks */
+  var freckles = who === 2
+    ? '<g fill="#C2521B" opacity=".55">'
+      + '<circle cx="44" cy="74" r="2"/><circle cx="52" cy="79" r="2"/><circle cx="37" cy="80" r="2"/>'
+      + '<circle cx="96" cy="74" r="2"/><circle cx="88" cy="79" r="2"/><circle cx="103" cy="80" r="2"/></g>'
+    : "";
+  /* Harry's hair sticks up; Ron's is flatter */
+  var tufts = who === 1
+    ? '<path d="M40 16 l7 -13 5 11z M62 10 l6 -13 6 13z M86 14 l8 -12 3 12z" fill="' + hair + '"/>'
+    : "";
+
+  var hat = opts.noHat ? "" :
+    '<g transform="rotate(' + tilt + ' 70 22)">'
+    + '<path d="M70 -32 L96 22 L44 22 Z" fill="' + robe + '" stroke="' + gold + '" stroke-width="2.5" stroke-linejoin="round"/>'
+    + '<ellipse cx="70" cy="23" rx="40" ry="8" fill="' + robe + '" stroke="' + gold + '" stroke-width="2.5"/>'
+    + '<path d="M52 18 h36" stroke="' + gold + '" stroke-width="3"/>'
+    + '<circle cx="70" cy="-30" r="4" fill="' + gold + '"/>'
+    + '</g>';
+
+  return ''
+  + '<svg viewBox="-14 -46 168 246" role="img" aria-label="' + (who === 1 ? "Harry" : "Ron") + '">'
+  /* robe */
+  + '<path d="M70 108 L112 132 L124 196 L16 196 L28 132 Z" fill="' + robe + '"/>'
+  + '<path d="M16 194 h108" stroke="' + gold + '" stroke-width="2.5" opacity=".55"/>'
+  + '<path d="M70 108 L92 122 L70 150 L48 122 Z" fill="#F1ECE0"/>'
+  /* Gryffindor scarf: scarlet with gold stripes */
+  + '<path d="M42 112 q28 16 56 0 l4 14 q-32 18 -64 0 z" fill="' + scarlet + '"/>'
+  + '<path d="M45 119 q25 13 50 0" stroke="' + gold + '" stroke-width="4" fill="none"/>'
+  + '<path d="M96 124 l12 34 -12 4 -6 -34 z" fill="' + scarlet + '"/>'
+  + '<path d="M96 133 h12 M97 143 h12" stroke="' + gold + '" stroke-width="3.5"/>'
+  /* hands */
+  + '<circle cx="20" cy="150" r="11" fill="' + skin + '"/>'
+  + '<circle cx="120" cy="150" r="11" fill="' + skin + '"/>'
+  /* head */
+  + '<ellipse cx="70" cy="62" rx="46" ry="50" fill="' + skin + '"/>'
+  + '<path d="' + hairPath + '" fill="' + hair + '"/>'
+  + tufts
+  + scar
+  + '<ellipse cx="22" cy="66" rx="6" ry="9" fill="' + skin + '"/>'
+  + '<ellipse cx="118" cy="66" rx="6" ry="9" fill="' + skin + '"/>'
+  + blush + freckles
+  + eyes(eyeKind, 52, 88, 60)
+  + glasses
+  + mouth(mouthKind, 70, 84)
+  + hat
+  + '</svg>';
+}
+
+/* ================= BACKDROPS ================= */
+function bgGreatHall(){
+  var s = '<rect width="400" height="260" fill="#2A1B3F"/>';
+  for (var i=0;i<7;i++){
+    var x = 22 + i*58, y = 24 + (i%3)*22;
+    s += '<g opacity=".9"><rect x="'+x+'" y="'+y+'" width="7" height="20" rx="3" fill="#F4E7CE"/>'
+      +  '<ellipse cx="'+(x+3.5)+'" cy="'+(y-4)+'" rx="4" ry="7" fill="#FFC24D"/>'
+      +  '<ellipse cx="'+(x+3.5)+'" cy="'+(y-4)+'" rx="11" ry="15" fill="#FFC24D" opacity=".14"/></g>';
+  }
+  /* long feast table, side-on: platters, then top, then legs */
+  for (var g=0;g<7;g++){
+    var gx = 58 + g*48;
+    s += '<ellipse cx="'+gx+'" cy="172" rx="13" ry="4" fill="#C9A227" opacity=".85"/>';
+    s += '<rect x="'+(gx-3)+'" y="160" width="6" height="12" rx="2" fill="#E0CE93"/>';
+  }
+  s += '<rect x="34" y="174" width="332" height="10" rx="3" fill="#6B4527"/>';
+  s += '<rect x="34" y="184" width="332" height="6" fill="#4A2E19"/>';
+  s += '<rect x="58" y="190" width="9" height="26" fill="#4A2E19"/>';
+  s += '<rect x="333" y="190" width="9" height="26" fill="#4A2E19"/>';
+  s += '<path d="M0 216 h400 v44 h-400z" fill="#3A2A22"/>';
+  /* pumpkins on the floor, inside the safe zone so wide screens never crop them */
+  [ 100, 300 ].forEach(function(px){
+    s += '<g><ellipse cx="'+px+'" cy="232" rx="30" ry="25" fill="#D9601F"/>'
+      +  '<path d="M'+px+' 210 v-11" stroke="#4E7A34" stroke-width="6" stroke-linecap="round"/>'
+      +  '<path d="M'+(px-13)+' 228 l7 -9 7 9z M'+(px+3)+' 228 l7 -9 7 9z" fill="#3A1D0C"/>'
+      +  '<path d="M'+(px-14)+' 240 q14 10 28 0" stroke="#3A1D0C" stroke-width="4" fill="none"/></g>';
+  });
+  return s;
+}
+function bgStairs(){
+  var s = '<rect width="400" height="260" fill="#241A38"/>';
+  for (var i=0;i<8;i++){
+    s += '<rect x="'+(i*34)+'" y="'+(210 - i*13)+'" width="60" height="13" fill="'+(i%2?"#3B2C52":"#453462")+'"/>';
+  }
+  s += '<rect x="0" y="210" width="400" height="50" fill="#3B2C52"/>';
+  s += '<g opacity=".55"><rect x="300" y="40" width="66" height="96" rx="33" fill="#6E5FA0"/>'
+    +  '<path d="M300 88 h66 M333 40 v96" stroke="#241A38" stroke-width="4"/></g>';
+  s += '<ellipse cx="333" cy="70" rx="30" ry="30" fill="#F0E6C8" opacity=".22"/>';
+  return s;
+}
+function bgPitch(){
+  var s = '<rect width="400" height="260" fill="#141B36"/>';
+  for (var i=0;i<40;i++){
+    var x = (i*97)%400, y = (i*53)%150;
+    s += '<circle cx="'+x+'" cy="'+y+'" r="'+(i%3===0?1.6:1)+'" fill="#DCE6FF" opacity=".7"/>';
+  }
+  s += '<circle cx="330" cy="46" r="24" fill="#F3ECD2" opacity=".9"/><circle cx="322" cy="40" r="24" fill="#141B36"/>';
+  s += '<path d="M0 196 q200 -26 400 0 v64 h-400z" fill="#1E4A2C"/>';
+  [70,200,330].forEach(function(hx,k){
+    var hy = 120 + k*4;
+    s += '<path d="M'+hx+' 196 V'+hy+'" stroke="#C9B98A" stroke-width="5"/>'
+      +  '<ellipse cx="'+hx+'" cy="'+(hy-14)+'" rx="18" ry="15" fill="none" stroke="#C9B98A" stroke-width="5"/>';
+  });
+  return s;
+}
+function bgCorridor(){
+  var s = '<rect width="400" height="260" fill="#2B2140"/>';
+  for (var i=0;i<5;i++){
+    var x = i*88;
+    s += '<path d="M'+x+' 200 V70 q22 -30 44 0 V200z" fill="none" stroke="#463658" stroke-width="6"/>';
+    s += '<path d="M'+(x+8)+' 196 V78 q14 -20 28 0 V196z" fill="#1B1430" opacity=".85"/>';
+  }
+  s += '<rect x="0" y="196" width="400" height="64" fill="#3A2E4E"/>';
+  for (var j=0;j<10;j++){
+    s += '<rect x="'+(j*40)+'" y="196" width="38" height="64" fill="'+(j%2?"#43355A":"#392C4D")+'"/>';
+  }
+  return s;
+}
+function bgDungeon(){
+  var s = '<rect width="400" height="260" fill="#15111F"/>';
+  for (var r=0;r<6;r++){
+    for (var c=0;c<9;c++){
+      s += '<rect x="'+(c*46 + (r%2?23:0))+'" y="'+(r*34)+'" width="44" height="32" rx="3" fill="#241C33" stroke="#1A1426" stroke-width="2"/>';
+    }
+  }
+  s += '<rect x="0" y="200" width="400" height="60" fill="#1E1729"/>';
+  s += '<g opacity=".85"><rect x="20" y="52" width="7" height="20" rx="3" fill="#C9BDA2"/>'
+    +  '<ellipse cx="23.5" cy="46" rx="5" ry="9" fill="#FF6B35"/>'
+    +  '<ellipse cx="23.5" cy="46" rx="16" ry="22" fill="#FF6B35" opacity=".16"/></g>';
+  s += '<g opacity=".85"><rect x="372" y="52" width="7" height="20" rx="3" fill="#C9BDA2"/>'
+    +  '<ellipse cx="375.5" cy="46" rx="5" ry="9" fill="#FF6B35"/>'
+    +  '<ellipse cx="375.5" cy="46" rx="16" ry="22" fill="#FF6B35" opacity=".16"/></g>';
+  return s;
+}
+var BACKDROPS = [bgGreatHall, bgStairs, bgPitch, bgCorridor, bgDungeon];
+
+/* the troll, for scene 5 */
+function troll(scale){
+  return '<svg viewBox="0 0 150 210" style="height:'+scale+'" role="img" aria-label="An enormous troll">'
+  + '<ellipse cx="75" cy="196" rx="52" ry="11" fill="#000" opacity=".35"/>'
+  + '<path d="M40 200 h26 v-46 h-26z M84 200 h26 v-46 h-26z" fill="#5E6B4C"/>'
+  + '<ellipse cx="75" cy="126" rx="50" ry="46" fill="#6E7C58"/>'
+  + '<ellipse cx="75" cy="140" rx="34" ry="28" fill="#7F8D66"/>'
+  + '<ellipse cx="26" cy="120" rx="14" ry="30" fill="#6E7C58"/>'
+  + '<ellipse cx="124" cy="120" rx="14" ry="30" fill="#6E7C58"/>'
+  + '<ellipse cx="75" cy="62" rx="38" ry="34" fill="#6E7C58"/>'
+  + '<ellipse cx="42" cy="60" rx="8" ry="12" fill="#6E7C58"/>'
+  + '<ellipse cx="108" cy="60" rx="8" ry="12" fill="#6E7C58"/>'
+  + '<ellipse cx="62" cy="56" rx="8" ry="7" fill="#fff"/><circle cx="63" cy="57" r="3.6" fill="#1E1A12"/>'
+  + '<ellipse cx="90" cy="56" rx="8" ry="7" fill="#fff"/><circle cx="91" cy="57" r="3.6" fill="#1E1A12"/>'
+  + '<path d="M56 44 l16 5 M96 44 l-16 5" stroke="#3F4832" stroke-width="4" stroke-linecap="round"/>'
+  + '<ellipse cx="75" cy="72" rx="10" ry="8" fill="#5A664A"/>'
+  + '<path d="M58 86 q17 12 34 0 q-17 6 -34 0z" fill="#3B2A2A"/>'
+  + '<path d="M64 86 l3 9 3 -9z M80 86 l3 9 3 -9z" fill="#F2EEDC"/>'
+  + '<path d="M124 104 l22 -54 12 5 -20 55z" fill="#7A5C3A"/>'
+  + '<ellipse cx="150" cy="46" rx="15" ry="18" fill="#8A6A44"/>'
+  + '</svg>';
+}
+
+/* ================= CONTENT ================= */
+/* Every "chapter" quote below was located in the Chapter 10 text of the
+   project's source markdown. "prodigious" is NOT in the chapter and gets
+   an original final clue instead. */
+
+/* Every scene below is an actual Chapter 10 event, in the order the chapter
+   tells them, matched to the Part 1 / Part 2 worksheet summaries so the game
+   and the worksheet tell the same story.
+   `blanks` hides answer words inside the chapter quote: [textInQuote, wordItBelongsTo].
+   A blank fills itself in once that word has been revealed. */
+
+var SCENES = [
+  { icon:safeEmoji("🎃","★"),  name:"The Nimbus Arrives",    set:"The Great Hall &middot; breakfast" },
+  { icon:safeEmoji("🏰","▲"),  name:"Up the Marble Staircase", set:"The Marble Staircase" },
+  { icon:safeEmoji("🧹","🏆"), name:"Quidditch Training",     set:"The Quidditch Pitch &middot; seven o'clock" },
+  { icon:safeEmoji("🦇","🌙"), name:"Hallowe'en at Hogwarts", set:"Hallowe'en Day" },
+  { icon:TROLL,                name:"Troll in the Dungeon",   set:"The Corridors" }
+];
+
+var MALFOY_QUOTE = "‘That's a broomstick,’ he said, throwing it back to Harry with a mixture of jealousy and spite on his face.";
+var MALFOY_BLANKS = [["jealousy","Jealousy"],["spite","Spite"]];
+
+var STEPS = [
+
+/* ================= SCENE 1 - THE NIMBUS ARRIVES ================= */
+{ t:"word", scene:0, who:1, word:"Glee", pos:"noun",
+  setup:"At breakfast, six owls drop a long package in front of Harry. The note is from Professor McGonagall: it is a Nimbus Two Thousand. Nobody else is allowed to know. Harry is trying very hard to look normal.",
+  ask:"What word means Harry's great happiness?",
+  hint:"Great delight or triumphant joy.",
+  quote:"Harry had difficulty hiding his glee as he handed the note to Ron to read.",
+  blanks:[["glee","Glee"]],
+  def:"Great delight or triumphant joy.",
+  conseq:"🎉 Harry has now read the note four times.",
+  p1:{e:"sparkle",m:"grin"}, p2:{e:"normal",m:"smile"},
+  beats:[[1,"It's a Nimbus Two Thousand!"],[2,"You're trying not to smile. It isn't working."]],
+  react:{ p1:{e:"sparkle",m:"beam",blush:true}, p2:{e:"happy",m:"grin"},
+          beats:[[1,"I can't stop smiling."],[2,"Nobody could. That's glee."]] } },
+
+{ t:"word", scene:0, who:2, word:"Jealousy", pos:"noun",
+  setup:"They leave the hall quickly to open the package in private. Halfway across the Entrance Hall, Malfoy stops them. He grabs the package and feels it. He knows exactly what is inside.",
+  ask:"Malfoy wants what Harry has. What is he feeling?",
+  hint:"A feeling of envy or resentment toward someone who has something you want.",
+  quote:MALFOY_QUOTE, blanks:MALFOY_BLANKS,
+  def:"A feeling of envy or resentment toward someone who has something you want.",
+  conseq:"😒 Malfoy says he does not care. Nobody believes him.",
+  p1:{e:"wide",m:"o"}, p2:{e:"side",m:"frown"},
+  beats:[[1,"Malfoy knows it's a broomstick."],[2,"Look at his face. He wants one too."]],
+  react:{ p1:{e:"side",m:"smirk"}, p2:{e:"side",m:"smirk"},
+          beats:[[1,"He looks so unhappy."],[2,"Because you have a Nimbus and he doesn't."]] } },
+
+{ t:"word", scene:0, who:1, word:"Spite", pos:"noun",
+  setup:"Malfoy throws the package back. “You'll be for it this time, Potter,” he says. “First-years aren't allowed broomsticks.” He is going to report Harry. He wants Harry to be in trouble.",
+  ask:"What word means wanting to hurt or annoy someone?",
+  hint:"A desire to hurt, annoy, or offend someone, often out of resentment.",
+  quote:MALFOY_QUOTE, blanks:MALFOY_BLANKS,
+  def:"A desire to hurt, annoy, or offend someone, often out of resentment.",
+  conseq:"🧹 Malfoy has tried to report a broomstick. It is not going well.",
+  p1:{e:"angry",m:"frown"}, p2:{e:"angry",m:"frown"},
+  beats:[[1,"He's going to tell a teacher."],[2,"He just wants to make you unhappy."]],
+  react:{ p1:{e:"flat",m:"frown"}, p2:{e:"side",m:"smirk"},
+          beats:[[1,"That's spite."],[2,"He is very good at it."]] } },
+
+/* ================= SCENE 2 - UP THE MARBLE STAIRCASE ================= */
+{ t:"word", scene:1, who:2, word:"Beaming", pos:"verb",
+  setup:"Professor Flitwick appears at Malfoy's elbow. Malfoy tells him about the broomstick, hoping Harry will be punished. But Flitwick already knows — and he is delighted. He gives Harry an enormous smile.",
+  ask:"What word describes Flitwick's big, bright smile?",
+  hint:"Smiling brightly and happily.",
+  quote:"‘Yes, yes, that's right,’ said Professor Flitwick, beaming at Harry.",
+  blanks:[["beaming","Beaming"]],
+  def:"Smiling brightly and happily.",
+  conseq:"😁 Malfoy's plan has failed. Flitwick is still smiling.",
+  p1:{e:"happy",m:"grin"}, p2:{e:"wide",m:"o"},
+  beats:[[1,"Professor Flitwick isn't angry at all!"],[2,"He's smiling at you. A really big smile."]],
+  react:{ p1:{e:"happy",m:"beam",blush:true}, p2:{e:"happy",m:"grin"},
+          beats:[[1,"He was beaming!"],[2,"And Malfoy heard every word."]] } },
+
+{ t:"word", scene:1, who:1, word:"Smothering", pos:"verb",
+  setup:"Harry and Ron head upstairs. Behind them, Malfoy is red with rage and confusion. They both badly want to laugh — but a teacher is right there, so they are holding it in with everything they have.",
+  ask:"What are they doing to their laughter? They are holding it back.",
+  hint:"Holding back or suppressing something, like laughter, so it doesn't show.",
+  quote:"Harry and Ron headed upstairs, smothering their laughter at Malfoy's obvious rage and confusion.",
+  blanks:[["smothering","Smothering"]],
+  def:"Holding back or suppressing something, like laughter, so it doesn't show.",
+  note:{ title:"If you look this word up, you'll see something different",
+         body:"That's right too. <b>Smother</b> usually means to cover something so it cannot breathe. You smother a fire with a blanket: no air gets in, so the fire goes out.<br><br>Chapter 10 uses that same picture for a <i>feeling</i>. Harry and Ron <b>smother their laughter</b> — the laugh is still there inside them, but they press it down so it cannot get out. Same action, on a feeling instead of a fire." },
+  conseq:"🤫 Two students are making very strange noises on the stairs.",
+  p1:{e:"squint",m:"tight",blush:true}, p2:{e:"squint",m:"tight",blush:true},
+  beats:[[1,"Don't laugh. Don't laugh."],[2,"I'm trying! My face won't listen."]],
+  react:{ p1:{e:"happy",m:"beam",blush:true}, p2:{e:"happy",m:"beam",blush:true},
+          beats:[[1,"We were smothering our laughter."],[2,"We were terrible at it."]] } },
+
+{ t:"word", scene:1, who:2, word:"Disapprovingly", pos:"adverb",
+  setup:"Hermione comes stomping up the stairs behind them. Harry broke a school rule — and got a broomstick for it. She does not shout. She does not call a teacher. She just looks at the package in Harry's hand.",
+  ask:"How is Hermione looking at them?",
+  hint:"In a way that shows you think something is wrong or unacceptable.",
+  quote:"Hermione was stomping up the stairs looking disapprovingly at the package in Harry's hand.",
+  blanks:[["disapprovingly","Disapprovingly"]],
+  def:"In a way that shows you think something is wrong or unacceptable.",
+  conseq:"👀 Nobody was shouted at. Everybody feels bad anyway.",
+  p1:{e:"wide",m:"o"}, p2:{e:"flat",m:"wobble"},
+  beats:[[1,"Uh oh. Hermione saw the package."],[2,"She thinks it isn't fair."]],
+  react:{ p1:{e:"squint",m:"wobble"}, p2:{e:"flat",m:"frown"},
+          beats:[[1,"She looked at us disapprovingly."],[2,"That was worse than shouting."]] } },
+
+/* ================= SCENE 3 - QUIDDITCH TRAINING ================= */
+{ t:"word", scene:2, who:1, word:"Recited", pos:"verb",
+  setup:"At seven o'clock, Oliver Wood teaches Harry the rules of Quidditch. Three Chasers, two Beaters, one Keeper, one Seeker. Then Wood asks if Harry understood — and Harry says the whole thing back to him, from memory.",
+  ask:"What did Harry just do? He said it all back from memory.",
+  hint:"Repeated something from memory, often in a rehearsed way.",
+  quote:"‘The Chasers throw the Quaffle and put it through the hoops to score,’ Harry recited.",
+  blanks:[["recited","Recited"]],
+  def:"Repeated something from memory, often in a rehearsed way.",
+  conseq:"🧠 Wood is impressed. Wood is also still talking.",
+  p1:{e:"flat",m:"smile"}, p2:{e:"wide",m:"o"},
+  beats:[[1,"The Chasers throw the Quaffle through the hoops."],[2,"You remembered every single word."]],
+  react:{ p1:{e:"sparkle",m:"grin"}, p2:{e:"happy",m:"smile"},
+          beats:[[1,"I recited it!"],[2,"Perfectly. It was a bit frightening."]] } },
+
+{ t:"word", scene:2, who:2, word:"Pelted", pos:"verb",
+  setup:"Wood opens the crate and frees a Bludger. The heavy black ball shoots high into the air — then comes straight down at Harry's face. Harry hits it away with a bat. It turns round and comes back.",
+  ask:"What is the Bludger doing? It hits again and again, very hard.",
+  hint:"Struck or hit repeatedly and forcefully.",
+  quote:"At once, the black ball rose high in the air and then pelted straight at Harry's face.",
+  blanks:[["pelted","Pelted"]],
+  def:"Struck or hit repeatedly and forcefully.",
+  conseq:"🏐 The Bludger is back in its box. It does not look sorry.",
+  p1:{e:"wide",m:"shout",shake:true}, p2:{e:"wide",m:"o"},
+  beats:[[1,"It's coming straight at my face!"],[2,"It keeps hitting you. It won't stop."]],
+  react:{ p1:{e:"dizzy",m:"wobble"}, p2:{e:"squint",m:"grin"},
+          beats:[[1,"It pelted me."],[2,"Four times. I counted."]] } },
+
+{ t:"word", scene:2, who:1, word:"Fouled", pos:"verb",
+  setup:"Wood explains the Golden Snitch. Catching it wins the team a hundred and fifty points, so the Seeker nearly always decides the match. That is why other players break the rules to stop the Seeker.",
+  ask:"What happens to Seekers in a game? They are treated unfairly.",
+  hint:"Treated unfairly or against the rules during a game.",
+  quote:"That's why Seekers get fouled so much.",
+  blanks:[["fouled","Fouled"]],
+  def:"Treated unfairly or against the rules during a game.",
+  note:{ title:"Careful — “foul” has another meaning",
+         body:"Usually <b>foul</b> means dirty or disgusting. Chapter 10 uses it that way too, later on, in the girls' toilets: <i>“a foul stench reached his nostrils.”</i><br><br>But in a <i>game</i>, to be <b>fouled</b> means something different: another player broke the rules against you. Same word, two jobs — a foul smell, and a foul in Quidditch." },
+  conseq:"🚩 Harry is the new Gryffindor Seeker. Harry has some questions.",
+  p1:{e:"wide",m:"o"}, p2:{e:"angry",m:"frown"},
+  beats:[[1,"So other players will cheat to stop me?"],[2,"Yes. They break the rules on purpose."]],
+  react:{ p1:{e:"flat",m:"wobble"}, p2:{e:"squint",m:"grin"},
+          beats:[[1,"Seekers get fouled a lot."],[2,"Good luck out there."]] } },
+
+{ t:"word", scene:2, who:2, word:"Substitutes", pos:"noun",
+  setup:"Wood says a Quidditch match only ends when the Snitch is caught, so a game can last for ages. The record is three months. The players were so tired that fresh players had to come on so the others could sleep.",
+  ask:"What do we call players who come on to replace others?",
+  hint:"People who take the place of others, especially players replacing teammates.",
+  quote:"A game of Quidditch only ends when the Snitch is caught, so it can go on for ages — I think the record is three months, they had to keep bringing on substitutes so the players could get some sleep.",
+  blanks:[["substitutes","Substitutes"]],
+  def:"People who take the place of others, especially players replacing teammates.",
+  conseq:"📋 Longest match on record: three months. Everybody needed a nap.",
+  p1:{e:"wide",m:"o"}, p2:{e:"flat",m:"smile"},
+  beats:[[1,"Three months? Nobody can play for three months."],[2,"New players came on. The tired ones went to bed."]],
+  react:{ p1:{e:"squint",m:"grin"}, p2:{e:"happy",m:"smile"},
+          beats:[[1,"Substitutes!"],[2,"I hope our matches are shorter."]] } },
+
+/* ================= SCENE 4 - HALLOWE'EN AT HOGWARTS ================= */
+{ t:"word", scene:3, who:1, word:"Bad-tempered", pos:"adjective", bg:1,
+  setup:"On Hallowe'en morning, Professor Flitwick teaches Wingardium Leviosa. Ron cannot make his feather move. Hermione does it first try, perfectly, and Flitwick claps for her. Ron is furious for the rest of the lesson.",
+  ask:"What adjective describes someone who gets angry very easily?",
+  hint:"Having a quick, easily-angered nature.",
+  quote:"Ron was in a very bad temper by the end of the class.",
+  blanks:[["bad temper","Bad-tempered"]],
+  quoteNote:"the book uses the noun form here \u2014 our vocabulary word is the adjective",
+  def:"Having a quick, easily-angered nature.",
+  conseq:"😤 Hermione heard him. She has been crying in the girls' toilets all afternoon.",
+  p1:{e:"wide",m:"wobble"}, p2:{e:"angry",m:"frown"},
+  beats:[[2,"Why does she always get it first?"],[1,"Ron gets angry very quickly. Very quickly."]],
+  react:{ p1:{e:"wide",m:"o"}, p2:{e:"squint",m:"frown"},
+          beats:[[2,"Fine. I'm bad-tempered."],[1,"Ron... Hermione heard you."]] } },
+
+{ t:"word", scene:3, who:2, word:"Askew", pos:"adjective",
+  setup:"That night the Great Hall is full of bats, pumpkins and food. Harry is helping himself to a jacket potato when Professor Quirrell sprints in, terrified. His turban has slipped and is sitting completely crooked on his head.",
+  ask:"What word means crooked, or not straight?",
+  hint:"Not in a straight or level position; crooked.",
+  quote:"Harry was just helping himself to a jacket potato when Professor Quirrell came sprinting into the Hall, his turban askew and terror on his face.",
+  blanks:[["askew","Askew"]],
+  def:"Not in a straight or level position; crooked.",
+  conseq:"🦇 “Troll — in the dungeons — thought you ought to know.” Then he faints.",
+  p1:{e:"wide",m:"o",tilt:-30}, p2:{e:"wide",m:"o"},
+  beats:[[1,"Look at Professor Quirrell's turban!"],[2,"It's not straight. It's completely crooked."]],
+  react:{ p1:{e:"wide",m:"shout",tilt:-30}, p2:{e:"wide",m:"shout"},
+          beats:[[1,"His turban was askew."],[2,"Never mind the turban — he said TROLL!"]] } },
+
+/* ================= SCENE 5 - TROLL IN THE DUNGEON ================= */
+{ t:"word", scene:4, who:1, word:"Jostled", pos:"verb", bg:3,
+  setup:"Dumbledore sends every house back to the dormitories. Hundreds of students pour into the corridor at the same time. Harry and Ron have to push their way through a crowd of confused Hufflepuffs going the wrong way.",
+  ask:"What is the crowd doing to them?",
+  hint:"Pushed or bumped against roughly while moving through a crowd.",
+  quote:"As they jostled their way through a crowd of confused Hufflepuffs, Harry suddenly grabbed Ron's arm.",
+  blanks:[["jostled","Jostled"]],
+  def:"Pushed or bumped against roughly while moving through a crowd.",
+  conseq:"🌀 They are going the wrong way on purpose. Nobody has noticed.",
+  p1:{e:"wide",m:"o",shake:true}, p2:{e:"dizzy",m:"wobble",shake:true},
+  beats:[[1,"Everyone's pushing! I can't move!"],[2,"We're getting bumped from every side."]],
+  react:{ p1:{e:"angry",m:"shout"}, p2:{e:"wide",m:"o"},
+          beats:[[1,"We jostled through the crowd."],[2,"This way — the girls' toilets!"]] } },
+
+{ t:"word", scene:4, who:2, word:"Petrified", pos:"adjective", troll:"small",
+  setup:"They run to warn Hermione. They see the troll go into a room and they lock the door — then they hear a scream from inside. It is high and full of fear, and it is coming from the room they have just locked.",
+  ask:"What word means so frightened that you cannot move?",
+  hint:"So frightened that you cannot move; frozen with fear.",
+  quote:"Flushed with their victory they started to run back up the passage, but as they reached the corner they heard something that made their hearts stop — a high, petrified scream — and it was coming from the chamber they'd just locked up.",
+  blanks:[["petrified","Petrified"]],
+  def:"So frightened that you cannot move; frozen with fear.",
+  conseq:"😱 Hermione is pressed against the wall. She cannot move at all.",
+  p1:{e:"wide",m:"shout"}, p2:{e:"wide",m:"o"},
+  beats:[[1,"That's Hermione. She's locked in with it."],[2,"That scream — she's too scared to move."]],
+  react:{ p1:{e:"wide",m:"shout"}, p2:{e:"angry",m:"shout"},
+          beats:[[1,"A petrified scream."],[2,"Open the door! GO!"]] } },
+
+{ t:"word", scene:4, who:1, word:"Prodigious", pos:"adjective", troll:"huge",
+  setup:"The troll fills the whole room. It is twelve feet tall, with grey skin, a tiny head and legs like tree trunks. In one hand it is dragging an enormous wooden club along the floor.",
+  ask:"What word means amazingly great in size?",
+  hint:"Remarkably or impressively great in size or degree.",
+  quote:"Twelve feet tall, its skin was a dull, granite grey, its great lumpy body like a boulder with its small bald head perched on top like a coconut.",
+  quoteNote:"our word describes exactly this kind of size — it begins with PRO–",
+  def:"Remarkably or impressively great in size or degree.",
+  conseq:TROLL + " They knocked it out with its own club. Hermione told McGonagall it was her fault.",
+  p1:{e:"wide",m:"o"}, p2:{e:"wide",m:"shout"},
+  beats:[[1,"It's twelve feet tall!"],[2,"It's the biggest thing I've ever seen."]],
+  react:{ p1:{e:"angry",m:"shout"}, p2:{e:"sparkle",m:"grin"},
+          beats:[[1,"A prodigious troll."],[2,"Hit it with its own club!"]] } },
+
+/* ================= FINAL BOSS ================= */
+{ t:"boss", scene:4, troll:"huge",
+  p1:{e:"wide",m:"o"}, p2:{e:"angry",m:"flat"},
+  beats:[[1,"It's taken our words!"],[2,"Say them out loud and we get them back."]] },
+
+{ t:"rapid", scene:4, who:2, flash:"😱", prompt:"So frightened that you cannot move.", word:"Petrified", troll:"huge",
+  p1:{e:"flat",m:"wobble"}, p2:{e:"normal",m:"smile"},
+  beats:[[1,"We just heard this one."],[2,"Through the door."]] },
+{ t:"rapid", scene:4, who:1, flash:"🎩", prompt:"Crooked. Not straight.", word:"Askew", troll:"huge",
+  p1:{e:"squint",m:"grin",tilt:-30}, p2:{e:"normal",m:"smile"},
+  beats:[[1,"Think about Quirrell's turban."],[2,"Got it."]] },
+{ t:"rapid", scene:4, who:2, flash:"😠", prompt:"Wanting to hurt or annoy someone.", word:"Spite", troll:"huge",
+  p1:{e:"angry",m:"frown"}, p2:{e:"angry",m:"frown"},
+  beats:[[1,"Malfoy on the stairs."],[2,"With the broomstick."]] },
+{ t:"rapid", scene:4, who:1, flash:"🏃", prompt:"Pushed and bumped in a crowd.", word:"Jostled", troll:"huge",
+  p1:{e:"dizzy",m:"wobble",shake:true}, p2:{e:"flat",m:"smile"},
+  beats:[[1,"All those Hufflepuffs."],[2,"Going the wrong way."]] },
+{ t:"rapid", scene:4, who:2, flash:"😁", prompt:"Smiling brightly and happily.", word:"Beaming", troll:"huge",
+  p1:{e:"happy",m:"beam"}, p2:{e:"happy",m:"beam",blush:true},
+  beats:[[1,"Professor Flitwick's face."],[2,"Like this!"]] },
+
+{ t:"end" }
+];
+
+/* ================= SOUND =================
+   Every sound is generated by the Web Audio API at runtime - no audio files,
+   no downloads, so the single-file/offline rule still holds. Browsers block
+   audio until a user gesture, so the context is created on the Begin click. */
+var Snd = (function(){
+  var ctx = null, muted = false;
+
+  function ac(){
+    if (!ctx){
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e){ ctx = null; }
+    }
+    if (ctx && ctx.state === "suspended") { try{ ctx.resume(); }catch(e){} }
+    return ctx;
+  }
+  function ok(){ return !muted && ac(); }
+
+  /* one pitched note */
+  function tone(o){
+    var c = ac(); if (!c) return;
+    var t0 = c.currentTime + (o.at || 0);
+    var osc = c.createOscillator(), g = c.createGain();
+    osc.type = o.type || "sine";
+    osc.frequency.setValueAtTime(o.f, t0);
+    if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t0 + o.dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(o.vol || 0.12, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    osc.connect(g); g.connect(c.destination);
+    osc.start(t0); osc.stop(t0 + o.dur + 0.02);
+  }
+
+  /* filtered noise - used for page turns, whooshes and troll rumble */
+  function noise(o){
+    var c = ac(); if (!c) return;
+    var t0 = c.currentTime + (o.at || 0);
+    var len = Math.max(1, Math.floor(c.sampleRate * o.dur));
+    var buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (var k = 0; k < len; k++) d[k] = (Math.random() * 2 - 1) * (1 - k / len);
+    var src = c.createBufferSource(); src.buffer = buf;
+    var f = c.createBiquadFilter();
+    f.type = o.hp ? "highpass" : "lowpass";
+    f.frequency.setValueAtTime(o.f || 1200, t0);
+    if (o.to) f.frequency.exponentialRampToValueAtTime(o.to, t0 + o.dur);
+    var g = c.createGain();
+    g.gain.setValueAtTime(o.vol || 0.09, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    src.connect(f); f.connect(g); g.connect(c.destination);
+    src.start(t0); src.stop(t0 + o.dur);
+  }
+
+  return {
+    unlock: function(){ ac(); },
+    muted:  function(){ return muted; },
+    toggle: function(){ muted = !muted; if (!muted) { ac(); this.blip(1, 2); } return muted; },
+
+    /* Tomodachi-style voice babble: short blips while a character "speaks".
+       Pip is pitched high and excitable, Bean low and even. */
+    blip: function(who, chars){
+      if (!ok()) return;
+      var n = Math.max(2, Math.min(6, Math.round(chars / 7)));
+      var base = who === 1 ? 660 : 300;
+      for (var k = 0; k < n; k++){
+        var jitter = who === 1 ? (Math.random() * 190 - 60) : (Math.random() * 70 - 35);
+        tone({ f: base + jitter, dur: 0.055, at: k * 0.072,
+               type: who === 1 ? "square" : "triangle", vol: who === 1 ? 0.05 : 0.06 });
+      }
+    },
+    hint:    function(){ if(!ok())return; tone({f:1046,dur:.16,vol:.10}); tone({f:1318,dur:.22,at:.10,vol:.09}); },
+    chapter: function(){ if(!ok())return; noise({f:2600,to:700,dur:.30,vol:.07,hp:true}); tone({f:392,dur:.20,vol:.05,at:.05}); },
+    reveal:  function(){ if(!ok())return;
+                 [523,659,784,1046].forEach(function(f,k){ tone({f:f,dur:.42,at:k*.075,vol:.10}); });
+                 tone({f:2093,dur:.75,at:.34,vol:.045,type:"triangle"}); },
+    next:    function(){ if(!ok())return; noise({f:900,to:250,dur:.17,vol:.05}); },
+    scene:   function(){ if(!ok())return; tone({f:294,dur:1.1,vol:.09,type:"triangle"}); tone({f:441,dur:.9,at:.05,vol:.05,type:"sine"}); },
+    troll:   function(){ if(!ok())return;
+                 tone({f:70,to:48,dur:1.5,vol:.20,type:"sawtooth"});
+                 noise({f:280,to:90,dur:1.3,vol:.11}); },
+    wrongly: function(){},
+    win:     function(){ if(!ok())return;
+                 [523,659,784,1046,1318].forEach(function(f,k){ tone({f:f,dur:.5,at:k*.13,vol:.11}); });
+                 tone({f:1568,dur:1.3,at:.66,vol:.09,type:"triangle"}); }
+  };
+})();
+
+/* ================= ENGINE ================= */
+var i = 0;
+var rung = 1;                 /* 1 = scene clue, 2 = hint shown, 3 = chapter shown */
+var revealed = false;
+var turns = { 1:0, 2:0 };
+var wordsDone = 0;
+var TOTAL_WORDS = 15;
+var lastScene = -1;
+
+var blipTimers = [];
+var revealedWords = {};   /* a blank stays hidden until its word has been given */
+
+/* Hide the answer inside the chapter quote. Each blank knows which word it
+   belongs to, so it fills itself in the moment that word is revealed. */
+function blankQuote(quote, blanks){
+  var html = esc(quote);
+  if (!blanks) return html;
+  blanks.forEach(function(b){
+    var find = b[0], owner = b[1];
+    var at = html.toLowerCase().indexOf(find.toLowerCase());
+    if (at < 0) return;
+    var actual = html.substr(at, find.length);
+    var done = !!revealedWords[owner.toLowerCase()];
+    html = html.slice(0, at)
+         + '<span class="blank' + (done ? " filled" : "") + '" data-w="' + esc(owner.toLowerCase())
+         + '" data-fill="' + esc(actual) + '">' + (done ? esc(actual) : "______") + '</span>'
+         + html.slice(at + find.length);
+  });
+  return html;
+}
+function fillBlanks(word){
+  var key = word.toLowerCase();
+  revealedWords[key] = true;
+  var list = document.querySelectorAll('.blank[data-w="' + key + '"]');
+  for (var k = 0; k < list.length; k++){
+    list[k].textContent = list[k].getAttribute("data-fill");
+    list[k].className = "blank filled";
+  }
+}
+var $ = function(id){ return document.getElementById(id); };
+var scroll = $("scroll");
+
+/* sparks */
+(function(){
+  var box = $("sparks"), html = "";
+  for (var k=0;k<16;k++){
+    html += '<div class="spark" style="left:'+(Math.random()*100).toFixed(1)+'%;'
+         +  'animation-duration:'+(11+Math.random()*13).toFixed(1)+'s;'
+         +  'animation-delay:-'+(Math.random()*18).toFixed(1)+'s;'
+         +  'opacity:'+(0.25+Math.random()*0.4).toFixed(2)+'"></div>';
+  }
+  box.innerHTML = html;
+})();
+
+/* scene chips */
+(function(){
+  var html = "";
+  SCENES.forEach(function(s, n){
+    if (n) html += '<span class="arrow">&rarr;</span>';
+    html += '<div class="scene-chip" id="chip'+n+'" title="'+s.name+'">'+s.icon+'</div>';
+  });
+  $("sceneChips").innerHTML = html;
+})();
+
+/* title cast */
+$("titleCast").innerHTML =
+    '<div class="bob">'  + character(1,"sparkle","grin",{blush:true}) + '</div>'
+  + '<div class="bob b2">' + character(2,"happy","beam",{blush:true, tilt:-12}) + '</div>';
+
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function drawCast(step, phase){
+  var s = step || {};
+  var src = (phase === "react" && s.react) ? s.react : s;
+  var a = src.p1 || s.p1 || {e:"normal", m:"smile"};
+  var b = src.p2 || s.p2 || {e:"normal", m:"smile"};
+  var beats = src.beats || [];
+  var who = s.who;
+
+  /* beat n is spoken n seconds after the previous one, so the two lines read
+     as call-and-response rather than as two captions posted at once */
+  function bubbleFor(target){
+    for (var n = 0; n < beats.length; n++){
+      if (beats[n][0] === target){
+        var delay = (0.18 + n * 0.95).toFixed(2);
+        var tone  = (target === 1 ? "loud" : "flat") + (n === 0 ? " first" : "");
+        return '<div class="bubble ' + tone + '" style="animation-delay:' + delay + 's">'
+             + esc(beats[n][1]) + '</div>';
+      }
+    }
+    return "";
+  }
+
+  for (var q = 0; q < blipTimers.length; q++) clearTimeout(blipTimers[q]);
+  blipTimers = [];
+  beats.forEach(function(bt, n){
+    blipTimers.push(setTimeout(function(){ Snd.blip(bt[0], bt[1].length); }, (0.18 + n * 0.95) * 1000));
+  });
+
+  var html = "";
+  html += '<div class="actor" data-who="1">'
+        + bubbleFor(1)
+        + '<div class="bob' + (a.shake ? " shake" : "") + '">'
+        + character(1, a.e, a.m, {tilt:a.tilt||0, blush:a.blush, noHat:a.noHat})
+        + '</div>'
+        + '<div class="nameplate">Harry</div></div>';
+
+  if (s.troll){
+    html += '<div class="actor" data-who="troll"><div class="bob b2 pop">'
+          + troll(s.troll === "huge" ? "clamp(300px,54vh,520px)" : "clamp(170px,29vh,270px)")
+          + '</div></div>';
+  }
+
+  html += '<div class="actor" data-who="2">'
+        + bubbleFor(2)
+        + '<div class="bob b2' + (b.shake ? " shake" : "") + '">'
+        + character(2, b.e, b.m, {tilt:b.tilt||0, blush:b.blush, noHat:b.noHat})
+        + '</div>'
+        + '<div class="nameplate">Ron</div></div>';
+
+  $("cast").innerHTML = html;
+  keepBubblesOnStage();
+}
+
+/* A speech bubble is centred on its character, so when the troll shoves someone
+   toward the edge the bubble can overhang the stage. Nudge it back in. */
+function keepBubblesOnStage(){
+  var stage = $("cast").parentNode.getBoundingClientRect();
+  var pad = 8;
+  var list = $("cast").querySelectorAll(".bubble");
+  for (var k = 0; k < list.length; k++){
+    var el = list[k];
+    el.style.setProperty("--nudge", "0px");
+    var r = el.getBoundingClientRect();
+    var shift = 0;
+    if (r.left  < stage.left  + pad) shift = (stage.left + pad) - r.left;
+    if (r.right > stage.right - pad) shift = (stage.right - pad) - r.right;
+    if (shift) el.style.setProperty("--nudge", Math.round(shift) + "px");
+  }
+}
+window.addEventListener("resize", keepBubblesOnStage);
+
+function setTurn(who){
+  var c = $("turnCard");
+  if (!who){ c.style.display = "none"; return; }
+  c.style.display = "flex";
+  c.className = "turncard " + (who === 1 ? "p1" : "p2");
+  $("turnText").textContent = "Player " + who + ", your turn!";
+}
+
+function setLadder(n){
+  $("ladder").style.display = n ? "flex" : "none";
+  ["r1","r2","r3"].forEach(function(id, k){
+    var el = $(id);
+    el.className = "rung" + (k+1 === n ? " on" : (k+1 < n ? " spent" : ""));
+  });
+}
+
+function setScene(n, bg){
+  var key = n + ":" + (bg === undefined ? n : bg);
+  if (key === lastScene) return;
+  var sceneChanged = (String(lastScene).split(":")[0] !== String(n));
+  lastScene = key;
+  $("backdrop").innerHTML = BACKDROPS[bg === undefined ? n : bg]();
+  $("setLabel").innerHTML = SCENES[n].set;
+  if (!sceneChanged) return;
+  SCENES.forEach(function(sc, k){
+    $("chip"+k).className = "scene-chip" + (k === n ? " now" : (k < n ? " done" : ""));
+  });
+  var b = $("banner");
+  b.innerHTML = SCENES[n].icon + "&nbsp; " + SCENES[n].name;
+  b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
+  if (n === 4) Snd.troll(); else Snd.scene();
+}
+
+var wordLabel = 1;
+function progress(){
+  $("wordNum").textContent = wordLabel;
+  $("meterFill").style.width = (wordsDone / TOTAL_WORDS * 100) + "%";
+}
+
+function btns(hint, chapter, reveal, next, chapterLabel, revealLabel){
+  $("btnHint").disabled    = !hint;
+  $("btnChapter").disabled = !chapter;
+  $("btnReveal").disabled  = !reveal;
+  $("btnNext").disabled    = !next;
+  $("btnChapter").innerHTML = (chapterLabel || "📖 Chapter Clue") + '<kbd>C</kbd>';
+  $("btnReveal").innerHTML   = (revealLabel  || "✨ Reveal Answer") + '<kbd>A</kbd>';
+}
+
+function render(){
+  var s = STEPS[i];
+
+  if (s.t === "end"){ showEnd(); return; }
+
+  setScene(s.scene, s.bg);
+  rung = 1; revealed = false;
+  scroll.innerHTML = "";
+  scroll.scrollTop = 0;
+
+  if (s.t === "word"){
+    turns[s.who]++;
+    setTurn(s.who);
+    setLadder(1);
+    drawCast(s);
+    wordLabel = wordsDone + 1;
+    progress();
+    scroll.innerHTML =
+      '<div class="card setup"><p>' + esc(s.setup) + '</p>'
+      + '<p class="ask">' + esc(s.ask) + '</p></div>';
+    btns(true, true, true, false, s.noQuote ? "💡 Final Clue" : "📖 Chapter Clue");
+    return;
+  }
+
+  if (s.t === "status"){
+    setTurn(0);
+    setLadder(0);
+    drawCast(s);
+    var li = s.lines.map(function(l){ return "<li>" + esc(l) + "</li>"; }).join("");
+    scroll.innerHTML =
+      '<div class="card statuscard"><h3>' + s.title + '</h3><ul>' + li + '</ul>'
+      + '<p class="kicker">' + esc(s.kicker) + '</p></div>';
+    btns(false, false, false, true);
+    return;
+  }
+
+  if (s.t === "boss"){
+    setTurn(0);
+    setLadder(0);
+    drawCast(s);
+    scroll.innerHTML =
+      '<div class="card statuscard"><h3>' + TROLL + ' The troll has stolen the words!</h3>'
+      + '<ul><li>Five words have vanished from the magical word bank.</li>'
+      + '<li>No hints this time — just the clue and your memory.</li>'
+      + '<li>Shout them out fast to get them back.</li></ul>'
+      + '<p class="kicker">Rapid Recall begins now. Take turns!</p></div>';
+    btns(false, false, false, true);
+    return;
+  }
+
+  if (s.t === "rapid"){
+    setTurn(s.who);
+    setLadder(0);
+    drawCast(s);
+    scroll.innerHTML =
+      '<div class="card rapid" style="text-align:center">'
+      + '<span class="rapid-badge">Rapid Recall</span>'
+      + '<div class="flash">' + s.flash + '</div>'
+      + '<div class="prompt">' + esc(s.prompt) + '</div></div>';
+    btns(false, false, true, false, null, "✨ Reveal Word");
+    return;
+  }
+}
+
+function showHint(){
+  var s = STEPS[i];
+  if (s.t !== "word" || rung >= 2) return;
+  rung = 2; setLadder(2);
+  Snd.hint();
+  scroll.insertAdjacentHTML("beforeend",
+    '<div class="card clue"><div class="lbl">💡 Hint</div><p>' + esc(s.hint) + '</p></div>');
+  scroll.scrollTop = scroll.scrollHeight;
+  $("btnHint").disabled = true;
+}
+
+function showChapter(){
+  var s = STEPS[i];
+  if (s.t !== "word" || rung >= 3) return;
+  if (rung < 2) { showHint(); }
+  rung = 3; setLadder(3);
+  var html;
+  if (s.noQuote){
+    html = '<div class="card clue"><div class="lbl">💡 Final Clue</div><p>'
+         + esc(s.finalClue) + '</p></div>';
+  } else {
+    html = '<div class="card clue chapter"><div class="lbl">📖 From Chapter 10</div>'
+         + '<blockquote>&ldquo;' + blankQuote(s.quote, s.blanks) + '&rdquo;</blockquote>'
+         + '<p class="cite">Harry Potter and the Sorcerer’s Stone, Chapter 10: Hallowe’en'
+         + (s.quoteNote ? ' &middot; ' + esc(s.quoteNote) : '') + '</p></div>';
+  }
+  Snd.chapter();
+  scroll.insertAdjacentHTML("beforeend", html);
+  scroll.scrollTop = scroll.scrollHeight;
+  $("btnChapter").disabled = true;
+}
+
+function showAnswer(){
+  var s = STEPS[i];
+  if (revealed) return;
+
+  if (s.t === "rapid"){
+    revealed = true;
+    Snd.reveal();
+    scroll.insertAdjacentHTML("beforeend",
+      '<div class="card answer" style="text-align:center"><div class="word">' + esc(s.word) + '</div></div>');
+    scroll.scrollTop = scroll.scrollHeight;
+    btns(false, false, false, true);
+    return;
+  }
+  if (s.t !== "word") return;
+
+  revealed = true;
+  Snd.reveal();
+  fillBlanks(s.word);
+  wordsDone++;
+  progress();
+  setLadder(0);
+  drawCast(s, "react");
+  scroll.insertAdjacentHTML("beforeend",
+      '<div class="card answer"><div class="word">' + esc(s.word) + '</div>'
+    + '<div class="pos">' + esc(s.pos) + '</div>'
+    + '<p class="def">' + esc(s.def) + '</p>'
+    + (s.note ? '<div class="wordnote"><div class="lbl">📘 ' + esc(s.note.title) + '</div><p>' + s.note.body + '</p></div>' : '')
+    + '<p class="conseq">' + s.conseq + '</p></div>');
+  scroll.scrollTop = scroll.scrollHeight;
+  btns(false, false, false, true);
+}
+
+function next(){
+  if (i < STEPS.length - 1){ Snd.next(); i++; render(); }
+}
+
+function showEnd(){
+  $("t1").textContent = turns[1];
+  $("t2").textContent = turns[2];
+  $("bank").innerHTML = STEPS.filter(function(s){ return s.t === "word"; })
+    .map(function(s){ return "<span>" + esc(s.word) + "</span>"; }).join("");
+  $("endScreen").classList.remove("hide");
+  Snd.win();
+}
+
+/* controls */
+$("btnHint").addEventListener("click", showHint);
+$("btnChapter").addEventListener("click", showChapter);
+$("btnReveal").addEventListener("click", showAnswer);
+$("btnNext").addEventListener("click", next);
+
+$("btnSound").addEventListener("click", function(){
+  var m = Snd.toggle();
+  this.textContent = m ? "🔇" : "🔊";
+  this.className = m ? "sound off" : "sound";
+});
+$("startBtn").addEventListener("click", function(){
+  Snd.unlock();
+  $("titleScreen").classList.add("hide");
+  lastScene = -1;
+  render();
+});
+$("againBtn").addEventListener("click", function(){
+  i = 0; turns = {1:0, 2:0}; wordsDone = 0; wordLabel = 1; lastScene = -1; revealedWords = {};
+  $("endScreen").classList.add("hide");
+  render();
+});
+
+document.addEventListener("keydown", function(e){
+  if ($("titleScreen").classList.contains("hide") === false){
+    if (e.key === " " || e.key === "Enter"){ e.preventDefault(); $("startBtn").click(); }
+    return;
+  }
+  if (!$("endScreen").classList.contains("hide")) return;
+  var k = e.key.toLowerCase();
+  if (k === " " || e.key === " " || k === "arrowright"){
+    e.preventDefault();
+    if (!$("btnNext").disabled) next();
+    else if (!$("btnReveal").disabled) showAnswer();
+  }
+  else if (k === "h"){ if (!$("btnHint").disabled) showHint(); }
+  else if (k === "c"){ if (!$("btnChapter").disabled) showChapter(); }
+  else if (k === "a"){ if (!$("btnReveal").disabled) showAnswer(); }
+});
+
+/* prime the stage behind the title screen */
+setScene(0, 0);
+drawCast(STEPS[0]);
+progress();
+</script>
+<!--BODY-END-->
+
+<!-- portfolio note: solo-play tip + rights -->
+<style>
+#pfn{position:fixed;right:14px;bottom:88px;z-index:99999;font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:#f3ead7}
+#pfn,#pfn *{font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;text-transform:none!important;letter-spacing:normal!important}
+#pfn .pfn-card{position:fixed;top:12px;right:12px;width:min(280px,calc(100vw - 24px));font-size:12.5px;background:rgba(12,8,24,.94);border:1px solid rgba(214,180,95,.55);border-radius:10px;padding:12px 14px 10px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#pfn .pfn-h{display:flex;justify-content:space-between;align-items:center;font-weight:600;color:#e9c96b;letter-spacing:.02em;margin-bottom:4px}
+#pfn button{background:none;border:0;color:#e9c96b;cursor:pointer;font:inherit;padding:2px 4px}
+#pfn .pfn-r{margin-top:8px;padding-top:6px;border-top:1px solid rgba(214,180,95,.25);font-size:11px;opacity:.7}
+#pfn .pfn-pill{display:none;width:34px;height:34px;border-radius:50%;background:rgba(12,8,24,.85);border:1px solid rgba(214,180,95,.55);font-weight:700;font-size:15px}
+#pfn.pfn-min .pfn-card{display:none}#pfn.pfn-min .pfn-pill{display:block}
+</style>
+<div id="pfn" role="complementary" aria-label="How to play solo">
+  <div class="pfn-card">
+    <div class="pfn-h"><span>Playing solo?</span><button type="button" aria-label="Hide tip" onclick="document.getElementById('pfn').classList.add('pfn-min')">&times;</button></div>
+    <div>In class, students answer out loud while the teacher drives. Say your answer, press A to reveal it, then Space for the next word. H gives a hint, C a clue from the chapter.</div>
+    <div class="pfn-r">&copy; 2026 Christine Peng. All rights reserved. Built for private, non-commercial classroom use. Harry Potter is &copy; J.K. Rowling / Warner Bros.</div>
+  </div>
+  <button type="button" class="pfn-pill" aria-label="Show tip" title="How to play solo" onclick="document.getElementById('pfn').classList.remove('pfn-min')">i</button>
+</div>
+<script>(function(){var n=document.getElementById('pfn');document.addEventListener('click',function(e){if(!n.contains(e.target))n.classList.add('pfn-min');},true);})();</script>
+</body>
+</html>

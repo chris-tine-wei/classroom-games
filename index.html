@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classroom Games · Christine Peng</title>
+<meta name="description" content="Three vocabulary games Christine Peng built for her online ESL class.">
+<style>
+  :root { --bg:#0f0b1d; --card:#1a1430; --ink:#f1e9d8; --muted:#b9aed0; --gold:#e3c26a; --line:rgba(227,194,106,.28); }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:980px; margin:0 auto; padding:56px 16px 40px; }
+  .eyebrow { color:var(--gold); font-size:13px; letter-spacing:.14em; text-transform:uppercase; margin:0 0 10px; }
+  h1 { font-size:clamp(28px,5vw,42px); line-height:1.15; margin:0 0 14px; }
+  .lede { color:var(--muted); max-width:640px; margin:0 0 36px; }
+  .grid { display:grid; gap:20px; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); }
+  a.card { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; color:inherit; text-decoration:none; transition:transform .15s ease,border-color .15s ease; }
+  a.card:hover, a.card:focus-visible { transform:translateY(-3px); border-color:var(--gold); outline:none; }
+  a.card img { width:100%; aspect-ratio:16/10; object-fit:cover; display:block; background:#000; }
+  .body { padding:16px 18px 18px; }
+  .body h2 { font-size:19px; margin:0 0 4px; }
+  .kind { color:var(--gold); font-size:13px; margin:0 0 8px; }
+  .body p { color:var(--muted); font-size:14.5px; margin:0; }
+  footer { margin-top:44px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  footer a { color:var(--gold); }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Christine Peng · Side builds</p>
+  <h1>Three games I built for my ESL class</h1>
+  <p class="lede">Built for three students aged 10 to 13, taught online over five months. Each game covers the vocabulary from one chapter of the book we read together. Each one is a single HTML file with no dependencies, so it runs offline in any browser.</p>
+  <div class="grid">
+    <a class="card" href="jeopardy/">
+      <img src="media/jeopardy.gif" alt="Jeopardy board: a vocabulary clue opens, the class picks an answer and points are awarded" loading="lazy">
+      <div class="body"><h2>Quidditch Jeopardy</h2><p class="kind">Team quiz · Chapter 11</p><p>A 20-clue board with Daily Double wagers, a countdown timer and a podium at the end. I've built a new board for 10 of the 11 chapters so far.</p></div>
+    </a>
+    <a class="card" href="tomodachi-hogwarts/">
+      <img src="media/tomodachi-hogwarts.gif" alt="Two cartoon students react in a scene while a vocabulary question and its answer appear" loading="lazy">
+      <div class="body"><h2>Tomodachi Hogwarts</h2><p class="kind">Story in scenes · Chapter 10</p><p>Fifteen words told through five scenes from the chapter. Two students take turns, with a hint, a chapter clue, and a quick-fire round at the end.</p></div>
+    </a>
+    <a class="card" href="remembrall-dive-race/">
+      <img src="media/remembrall-dive-race.gif" alt="Pixel-art word blocks; the matching word block is caught and the class score rises" loading="lazy">
+      <div class="body"><h2>Remembrall Dive Race</h2><p class="kind">Timed race · Chapter 9</p><p>The whole class races the clock to match 14 definitions. The sky turns from afternoon to midnight as the chapter moves on.</p></div>
+    </a>
+  </div>
+  <footer>
+    © 2026 Christine Peng. All rights reserved. Built for private, non-commercial classroom use. Harry Potter is © J.K. Rowling / Warner Bros.
+    · <a href="https://www.linkedin.com/in/christine-peng/">LinkedIn</a>
+  </footer>
+</main>
+</body>
+</html>

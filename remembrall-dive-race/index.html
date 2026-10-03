@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ch.9 Remembrall Dive Race — The Midnight Duel (v2)</title>
+<style>
+  /* ================= Minecraft-style base, reskinned for the sky ================= */
+  :root{
+    --mc:"Lucida Console","DejaVu Sans Mono","Liberation Mono",Consolas,"Courier New",monospace;
+    --night:#080b18;
+    --deep:#111830;
+    --panel:#1b2340;
+    --panel-lt:#3d4a78;
+    --panel-dk:#0a0e1e;
+    --ink:#f6f6f6;
+    --dim:#aab2c8;
+    --gold:#ffd447;
+    --gold-dk:#b8860d;
+    --silver:#c9cede;
+    --sky:#7fb4ff;
+    --violet:#8f6fd8;
+    --ember:#e0685a;
+    --xp:#ffd447;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ min-height:100%; }
+  body{
+    background:var(--night);
+    color:var(--ink);
+    font-family:var(--mc);
+    font-weight:bold;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    image-rendering:pixelated;
+    overflow-x:hidden;
+  }
+  .lower{ text-transform:none; letter-spacing:0; }
+  .sh{ text-shadow:3px 3px 0 rgba(0,0,0,.9); }
+  .sh1{ text-shadow:2px 2px 0 rgba(0,0,0,.9); }
+
+  /* ---- sky scene ---- */
+  #sky{ position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:linear-gradient(#05070f 0%, #0a1024 32%, #14204a 62%, #24305e 82%, #0f1428 100%); }
+  /* the afternoon sky, which burns off as the class works toward midnight */
+  #dusk{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:1;
+    transition:opacity 1.8s linear;
+    background:linear-gradient(#1d2f63 0%, #33508f 24%, #5d6f9e 48%, #9b8590 70%, #d19a63 88%, #7d5236 100%); }
+  #stars{ position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden;
+    opacity:.28; transition:opacity 1.8s linear; }
+  .star{ position:absolute; width:2px; height:2px; background:#fff;
+    animation:tw linear infinite alternate; }
+  .star.big{ width:3px; height:3px; box-shadow:0 0 6px 2px rgba(255,255,255,.4); }
+  @keyframes tw{ from{ opacity:.18; } to{ opacity:1; } }
+  #moon{ position:fixed; z-index:1; right:5%; top:17%; width:78px; pointer-events:none;
+    transition:top 1.8s linear;
+    filter:drop-shadow(0 0 22px rgba(255,240,190,.32)); }
+  #clouds{ position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
+  .cloud{ position:absolute; height:16px; background:rgba(160,180,225,.14);
+    box-shadow:0 -8px 0 rgba(160,180,225,.1), 0 8px 0 rgba(160,180,225,.08);
+    animation:drift linear infinite; }
+  @keyframes drift{ from{ transform:translateX(-30vw); } to{ transform:translateX(130vw); } }
+  #skyline{ position:fixed; left:0; right:0; bottom:0; z-index:1; width:100%;
+    pointer-events:none; opacity:.75; }
+  #vig{ position:fixed; inset:0; z-index:2; pointer-events:none;
+    background:radial-gradient(78% 62% at 50% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,.7) 100%); }
+
+  /* ================= blocky widgets ================= */
+  .mcpanel{ background:var(--panel);
+    border:4px solid; border-color:var(--panel-lt) var(--panel-dk) var(--panel-dk) var(--panel-lt);
+    box-shadow:0 0 0 4px #000; padding:14px; }
+  .mcbtn{ font-family:inherit; font-weight:bold; text-transform:uppercase; letter-spacing:1px;
+    color:#fff; text-shadow:2px 2px 0 rgba(0,0,0,.85); cursor:pointer;
+    background:linear-gradient(#57608c,#39406a);
+    border:4px solid; border-color:#8e98c8 #232a4a #232a4a #8e98c8;
+    padding:13px 22px; font-size:17px; min-height:52px; }
+  .mcbtn:hover:not(:disabled){ background:linear-gradient(#7d88bc,#4b5488); border-color:#fff #2c3358 #2c3358 #fff; }
+  .mcbtn:active:not(:disabled){ border-color:#232a4a #8e98c8 #8e98c8 #232a4a; }
+  .mcbtn:disabled{ opacity:.45; cursor:default; }
+  .mcbtn.go{ background:linear-gradient(#e0b52a,#a67c08); border-color:#ffe98f #6b4d04 #6b4d04 #ffe98f; color:#1a1408; text-shadow:1px 1px 0 rgba(255,255,255,.35); }
+  .mcbtn.sm{ font-size:13px; padding:8px 13px; min-height:38px; border-width:3px; }
+
+  /* ================= screens ================= */
+  .screen{ position:relative; z-index:5; display:none; min-height:100vh;
+    flex-direction:column; align-items:center; padding:20px 16px 34px; }
+  .screen.active{ display:flex; }
+  #title.active,#end.active{ justify-content:center; }
+
+  h1{ font-size:clamp(28px,5.2vw,58px); line-height:1.05; color:#fff; letter-spacing:2px; }
+  h1 .gd{ color:var(--gold); }
+  .tag{ font-size:clamp(13px,1.9vw,19px); color:var(--gold); margin-top:10px; }
+  .note{ font-size:13.5px; color:var(--dim); text-transform:none; letter-spacing:0; line-height:1.65; }
+  .note b{ color:#fff; }
+
+  /* ================= HUD — ONE shared class score ================= */
+  #hud{ width:100%; max-width:1500px; margin-bottom:12px; }
+  #scorebar{ background:#1b2340; border:4px solid; border-color:#3d4a78 #0a0e1e #0a0e1e #3d4a78;
+    box-shadow:0 0 0 3px #000; padding:11px 16px;
+    display:flex; gap:18px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  #scorebar .cell{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+  #scorebar .k{ font-size:11.5px; color:var(--dim); }
+  #scorebar .v{ font-size:30px; color:var(--gold); line-height:1; }
+  #scorebar .v.sm{ font-size:22px; color:#fff; }
+  #scoreVal.bump{ animation:bump .4s steps(4); }
+  @keyframes bump{ 0%{ transform:scale(1); } 45%{ transform:scale(1.45); color:#fff; } 100%{ transform:scale(1); } }
+  #progWrap{ flex:1 1 320px; min-width:240px; }
+  #progWrap .top{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--dim); margin-bottom:5px; }
+  #progTrack{ height:20px; background:#0a0e1e; border:3px solid #000; position:relative; overflow:hidden; }
+  #progFill{ height:100%; width:0; transition:width .45s steps(10);
+    background:linear-gradient(90deg,#b8860d,#ffd447 60%,#fff0a8); }
+  #progTrack .ticks{ position:absolute; inset:0; display:flex; pointer-events:none; }
+  #progTrack .ticks i{ flex:1 1 0; border-right:2px solid rgba(0,0,0,.55); }
+  #progTrack .ticks i:last-child{ border-right:0; }
+
+  #meta{ width:100%; max-width:1500px; display:flex; gap:10px; align-items:center;
+    flex-wrap:wrap; justify-content:center; margin-bottom:14px; font-size:13px; }
+  #meta .pill{ background:#1b2340; border:3px solid; border-color:#3d4a78 #0a0e1e #0a0e1e #3d4a78;
+    padding:7px 13px; }
+  #meta .pill b{ color:var(--gold); }
+
+  /* ================= main layout ================= */
+  #main{ width:100%; max-width:1500px; display:flex; gap:16px; align-items:flex-start;
+    justify-content:center; flex-wrap:wrap; }
+  #left{ flex:0 0 390px; max-width:100%; }
+  #right{ flex:1 1 640px; min-width:300px; }
+  @media (max-width:1080px){ #left{ flex:1 1 100%; } }
+
+  /* ---- Remembrall cue giver ---- */
+  #cuebox{ text-align:center; }
+  #ballWrap{ position:relative; height:214px; margin-bottom:6px; cursor:pointer; }
+  #ballWrap.dead{ cursor:default; }
+  #ballSvg{ position:absolute; left:50%; top:6px; transform:translateX(-50%);
+    width:154px; animation:bob 3.2s infinite ease-in-out;
+    filter:drop-shadow(0 0 16px rgba(214,226,255,.38)); }
+  @keyframes bob{ 0%,100%{ transform:translateX(-50%) translateY(0); }
+    50%{ transform:translateX(-50%) translateY(-11px); } }
+  #broomSvg{ position:absolute; left:50%; bottom:2px; transform:translateX(-50%); width:232px; opacity:.9; }
+  .mote{ position:absolute; color:var(--gold); font-size:14px; pointer-events:none;
+    text-shadow:0 0 8px var(--gold); animation:rise 3.1s linear infinite; }
+  @keyframes rise{ 0%{ transform:translateY(0) scale(.6); opacity:0; }
+    25%{ opacity:.95; } 100%{ transform:translateY(-132px) scale(1.15); opacity:0; } }
+  #ballWrap.red .glass{ fill:#e0685a; }
+  #ballWrap.red #ballSvg{ filter:drop-shadow(0 0 14px rgba(224,104,90,.85)); }
+
+  #cuecard{ min-height:250px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:9px; }
+  #cuePart{ font-size:12px; color:var(--sky); }
+  #cueIcon{ width:96px; height:96px; background-size:contain; background-repeat:no-repeat;
+    background-position:center; filter:drop-shadow(0 0 10px rgba(255,255,255,.25)); }
+  #cueIcon.pop{ animation:pop .45s steps(4); }
+  @keyframes pop{ 0%{ transform:scale(.3) rotate(-14deg); } 100%{ transform:scale(1) rotate(0); } }
+  #posChip{ display:inline-block; font-size:11px; color:#0f1428; background:var(--gold);
+    padding:3px 9px; border:2px solid #000; }
+  #cueText{ font-size:clamp(15px,1.85vw,22px); color:#fff; line-height:1.45; max-width:340px; }
+  #cueMoment{ font-size:13px; color:var(--dim); line-height:1.5; max-width:340px; }
+  #cueHint{ font-size:11.5px; color:var(--gold); }
+
+  /* ---- dive timer ---- */
+  #timeWrap{ width:100%; max-width:340px; margin-top:2px; }
+  #timeTrack{ height:12px; background:#0a0e1e; border:3px solid #000; }
+  #timeFill{ height:100%; width:100%; background:linear-gradient(90deg,#7fb4ff,#ffd447); }
+  #timeFill.warn{ background:linear-gradient(90deg,#ffb347,#e0685a); animation:pulseT .5s steps(2) infinite; }
+  @keyframes pulseT{ from{ opacity:1; } to{ opacity:.45; } }
+  #timeTxt{ font-size:11.5px; color:var(--dim); margin-top:4px; }
+
+  /* ---- sky-block grid ---- */
+  .secthead{ display:flex; align-items:center; gap:10px; margin:2px 0 9px; }
+  .secthead .ln{ flex:1 1 auto; height:3px; background:linear-gradient(90deg,rgba(255,212,71,.55),rgba(255,212,71,0)); }
+  .secthead .tx{ font-size:12.5px; color:var(--gold); white-space:nowrap; }
+  .secthead #arcLabel{ color:#fff; opacity:.85; transition:color .8s linear; }
+  .secthead #arcLabel.night{ color:var(--silver); }
+  .gridsec{ margin-bottom:18px; }
+  .grid{ display:flex; flex-wrap:wrap; gap:9px; justify-content:center; }
+  .blk{ position:relative; width:clamp(100px,10.2vw,138px); aspect-ratio:1/1;
+    border:0; padding:0; cursor:pointer; font-family:inherit; font-weight:bold;
+    background-size:100% 100%; background-repeat:no-repeat; image-rendering:pixelated;
+    box-shadow:inset -5px -5px 0 rgba(0,0,0,.42), inset 5px 5px 0 rgba(255,255,255,.14), 0 0 0 3px #000;
+    display:flex; align-items:flex-end; justify-content:center; transition:transform .08s;
+    animation:float 5s ease-in-out infinite; }
+  @keyframes float{ 0%,100%{ margin-top:0; } 50%{ margin-top:-6px; } }
+  .blk:hover:not(.mined){ transform:translateY(-5px); box-shadow:inset -5px -5px 0 rgba(0,0,0,.42),
+    inset 5px 5px 0 rgba(255,255,255,.14), 0 0 0 3px var(--gold); }
+  .blk .lbl{ width:100%; background:rgba(0,0,0,.78); color:#fff; font-size:clamp(12px,1.3vw,18px);
+    padding:5px 2px; text-shadow:2px 2px 0 #000; letter-spacing:.5px; word-break:break-word; }
+  .blk .crk{ position:absolute; inset:0; background-size:100% 100%; background-repeat:no-repeat;
+    pointer-events:none; image-rendering:pixelated; }
+  .blk.shake{ animation:bshake .3s steps(3); }
+  @keyframes bshake{ 0%,100%{ transform:translate(0,0); } 25%{ transform:translate(-6px,2px); }
+    50%{ transform:translate(5px,-2px); } 75%{ transform:translate(-3px,1px); } }
+  .blk.breaking{ animation:brk .34s steps(4) forwards; }
+  @keyframes brk{ 0%{ transform:scale(1); } 55%{ transform:scale(1.18); filter:brightness(2.2); }
+    100%{ transform:scale(.7) translateY(26px); opacity:0; } }
+  .blk.mined{ cursor:default; background:#0d1226; animation:none; margin-top:0;
+    box-shadow:inset 6px 6px 0 rgba(0,0,0,.75), inset -4px -4px 0 rgba(255,255,255,.07), 0 0 0 3px #000; }
+  .blk.mined .lbl{ background:rgba(0,0,0,.5); color:var(--gold); }
+  .blk .ico{ position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
+    width:56%; height:56%; background-size:contain; background-repeat:no-repeat;
+    background-position:center; display:none; }
+  .blk.mined .ico{ display:block; animation:pop .4s steps(4); }
+  .blk.reveal{ animation:rev .8s steps(6) 3; }
+  @keyframes rev{ 0%,100%{ box-shadow:inset -5px -5px 0 rgba(0,0,0,.42), 0 0 0 3px #000; }
+    50%{ box-shadow:inset -5px -5px 0 rgba(0,0,0,.42), 0 0 0 6px var(--gold); } }
+
+  /* ---- hotbar ---- */
+  #hotwrap{ width:100%; max-width:1500px; margin-top:6px; }
+  #hotbar{ display:flex; gap:5px; justify-content:center; flex-wrap:wrap;
+    background:#141a30; border:4px solid; border-color:#3d4a78 #0a0e1e #0a0e1e #3d4a78; padding:6px; }
+  .hslot{ width:clamp(40px,3.8vw,54px); aspect-ratio:1/1; background:#1e2645;
+    border:3px solid; border-color:#0a0e1e #4a5688 #4a5688 #0a0e1e; position:relative; }
+  .hslot .hi{ position:absolute; inset:12%; background-size:contain; background-repeat:no-repeat;
+    background-position:center; }
+  .hslot.full{ background:#2c2a1a; box-shadow:inset 0 0 12px rgba(255,212,71,.5); }
+  .hslot.full::after{ content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(115deg,transparent 38%,rgba(255,232,150,.5) 50%,transparent 62%);
+    background-size:260% 100%; animation:shine 2.6s linear infinite; }
+  @keyframes shine{ from{ background-position:150% 0; } to{ background-position:-110% 0; } }
+
+  /* ================= effects ================= */
+  #fx{ position:fixed; inset:0; z-index:60; pointer-events:none; overflow:hidden; }
+  .part{ position:absolute; width:9px; height:9px; animation:pfly .75s steps(6) forwards; }
+  @keyframes pfly{ 0%{ transform:translate(0,0) scale(1); opacity:1; }
+    100%{ transform:translate(var(--dx),var(--dy)) scale(.4); opacity:0; } }
+  .orb{ position:absolute; width:14px; height:14px; background:var(--gold);
+    box-shadow:0 0 12px 5px rgba(255,212,71,.5); transition:transform .62s linear, opacity .62s; }
+  .pts{ position:absolute; font-size:30px; color:var(--gold); text-shadow:3px 3px 0 #000;
+    animation:ptsup 1s steps(6) forwards; }
+  .pts.bad{ color:var(--ember); }
+  @keyframes ptsup{ 0%{ transform:translateY(0); opacity:1; } 100%{ transform:translateY(-62px); opacity:0; } }
+
+  #toasts{ position:fixed; right:14px; top:14px; z-index:70; display:flex;
+    flex-direction:column; gap:9px; align-items:flex-end; pointer-events:none; }
+  .toast{ display:flex; align-items:center; gap:11px; min-width:265px;
+    background:#141a30; border:4px solid; border-color:#b8860d #3a2c06 #3a2c06 #b8860d;
+    box-shadow:0 0 0 3px #000; padding:11px 15px; animation:tin .3s steps(4); }
+  .toast.out{ animation:tout .35s steps(4) forwards; }
+  @keyframes tin{ from{ transform:translateX(130%); } to{ transform:translateX(0); } }
+  @keyframes tout{ from{ transform:translateX(0); opacity:1; } to{ transform:translateX(130%); opacity:0; } }
+  .toast .ti{ width:42px; height:42px; flex:0 0 42px; background:#1e2645;
+    border:2px solid #000; background-size:74%; background-repeat:no-repeat; background-position:center; }
+  .toast .tt{ text-align:left; }
+  .toast .t1{ font-size:11.5px; color:var(--gold); }
+  .toast .t2{ font-size:16px; color:#fff; }
+  .toast.bad{ border-color:#b8563f #3a1d16 #3a1d16 #b8563f; }
+  .toast.bad .t1{ color:#ff9a72; }
+
+  /* the moment the lesson turns into the duel */
+  #nightflash{ position:fixed; inset:0; z-index:59; pointer-events:none; background:#000;
+    animation:nf 1.6s ease-out forwards; }
+  @keyframes nf{ 0%{ opacity:0; } 28%{ opacity:.82; } 100%{ opacity:0; } }
+
+  /* ================= end screen ================= */
+  #endGrid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:16px 0 4px; }
+  .ecell{ width:112px; padding:9px 5px; background:#141a30; border:3px solid var(--gold-dk); text-align:center; }
+  .ecell .ei{ width:46px; height:46px; margin:0 auto 5px; background-size:contain;
+    background-repeat:no-repeat; background-position:center; }
+  .ecell .ew{ font-size:11.5px; color:#fff; word-break:break-word; }
+  #endStats{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+  .stat{ background:#141a30; border:4px solid; border-color:#3d4a78 #0a0e1e #0a0e1e #3d4a78;
+    padding:10px 18px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .stat .k{ font-size:11px; color:var(--dim); }
+  .stat .v{ font-size:26px; color:var(--gold); }
+  .fw{ position:absolute; width:8px; height:8px; animation:fwy 1.5s steps(9) forwards; }
+  @keyframes fwy{ 0%{ transform:translate(0,0); opacity:1; }
+    100%{ transform:translate(var(--dx),var(--dy)); opacity:0; } }
+</style>
+</head>
+<body>
+
+<div id="sky"></div>
+<div id="dusk"></div>
+<div id="stars"></div>
+<div id="clouds"></div>
+
+<!-- moon -->
+<svg id="moon" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+  <rect x="5" y="1" width="6" height="1" fill="#f4eed4"/>
+  <rect x="3" y="2" width="10" height="2" fill="#f4eed4"/>
+  <rect x="2" y="4" width="12" height="8" fill="#f4eed4"/>
+  <rect x="3" y="12" width="10" height="2" fill="#f4eed4"/>
+  <rect x="5" y="14" width="6" height="1" fill="#f4eed4"/>
+  <rect x="4" y="5" width="2" height="2" fill="#ddd5b4"/>
+  <rect x="9" y="4" width="3" height="2" fill="#ddd5b4"/>
+  <rect x="6" y="9" width="3" height="2" fill="#ddd5b4"/>
+  <rect x="10" y="10" width="2" height="1" fill="#ddd5b4"/>
+</svg>
+
+<!-- castle + forest silhouette -->
+<svg id="skyline" viewBox="0 0 320 60" preserveAspectRatio="none" shape-rendering="crispEdges" aria-hidden="true">
+  <rect x="0" y="46" width="320" height="14" fill="#050810"/>
+  <g fill="#080d1c">
+    <rect x="8" y="36" width="10" height="12"/><rect x="10" y="30" width="6" height="6"/>
+    <rect x="22" y="40" width="14" height="8"/>
+    <rect x="40" y="26" width="12" height="22"/><rect x="42" y="18" width="8" height="8"/>
+    <rect x="44" y="12" width="4" height="6"/>
+    <rect x="56" y="34" width="18" height="14"/>
+    <rect x="78" y="22" width="10" height="26"/><rect x="80" y="14" width="6" height="8"/>
+    <rect x="82" y="8" width="2" height="6"/>
+    <rect x="92" y="38" width="22" height="10"/>
+    <rect x="118" y="30" width="12" height="18"/><rect x="120" y="24" width="8" height="6"/>
+    <rect x="134" y="42" width="16" height="6"/>
+    <rect x="154" y="28" width="14" height="20"/><rect x="157" y="20" width="8" height="8"/>
+    <rect x="159" y="14" width="4" height="6"/>
+    <rect x="172" y="36" width="20" height="12"/>
+    <rect x="196" y="24" width="10" height="24"/><rect x="198" y="16" width="6" height="8"/>
+  </g>
+  <g fill="#040710">
+    <rect x="212" y="40" width="4" height="8"/><rect x="213" y="34" width="2" height="6"/>
+    <rect x="220" y="36" width="5" height="12"/><rect x="221" y="28" width="3" height="8"/>
+    <rect x="230" y="41" width="4" height="7"/><rect x="231" y="35" width="2" height="6"/>
+    <rect x="240" y="34" width="6" height="14"/><rect x="242" y="26" width="3" height="8"/>
+    <rect x="252" y="40" width="5" height="8"/><rect x="253" y="33" width="3" height="7"/>
+    <rect x="264" y="36" width="5" height="12"/><rect x="265" y="29" width="3" height="7"/>
+    <rect x="276" y="41" width="4" height="7"/><rect x="277" y="34" width="2" height="7"/>
+    <rect x="286" y="35" width="6" height="13"/><rect x="288" y="27" width="3" height="8"/>
+    <rect x="300" y="39" width="5" height="9"/><rect x="301" y="32" width="3" height="7"/>
+    <rect x="310" y="42" width="4" height="6"/><rect x="311" y="36" width="2" height="6"/>
+  </g>
+  <g fill="#ffd447" opacity=".55">
+    <rect x="44" y="32" width="2" height="2"/><rect x="48" y="38" width="2" height="2"/>
+    <rect x="81" y="28" width="2" height="2"/><rect x="122" y="34" width="2" height="2"/>
+    <rect x="158" y="33" width="2" height="2"/><rect x="163" y="40" width="2" height="2"/>
+    <rect x="200" y="30" width="2" height="2"/><rect x="62" y="39" width="2" height="2"/>
+  </g>
+</svg>
+
+<div id="vig"></div>
+<div id="fx"></div>
+<div id="toasts"></div>
+
+<!-- ============ TITLE ============ -->
+<section class="screen active" id="title">
+  <div class="mcpanel" style="max-width:850px;text-align:center">
+    <h1 class="sh">Ch.9 <span class="gd">Remembrall Dive Race</span></h1>
+    <p class="tag sh1">The Midnight Duel &middot; 14 Sky Blocks &middot; One Class Score</p>
+    <div id="titleBlocks" style="display:flex;gap:7px;justify-content:center;margin:20px 0 6px;flex-wrap:wrap"></div>
+    <p class="note" style="max-width:640px;margin:14px auto 0">
+      Share your screen. The Remembrall glows and shows a definition from Chapter 9.
+      Students shout the word out loud or type it in chat. You click the matching sky block.<br><br>
+      <b>Right block</b> &rarr; the class dives, catches the word, and the score goes up.<br>
+      <b>Wrong block</b> &rarr; the block cracks, the class loses 3 points, and the streak resets.<br>
+      <b>25 seconds per word.</b> Catch it in the first 10 seconds for a speed bonus.<br><br>
+      One board, one run. The words arrive in the order the chapter does, and the sky above the
+      class burns down from afternoon to midnight as the flying lesson turns into the duel.<br>
+      Everyone is on the same team. One score, 14 words, no losers.
+    </p>
+    <div style="margin-top:20px">
+      <button class="mcbtn go" id="toGame">Kick Off From the Ground</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GAME ============ -->
+<section class="screen" id="game">
+
+  <div id="hud">
+    <div id="scorebar">
+      <div class="cell">
+        <span class="k sh1">Class Score</span>
+        <span class="v sh" id="scoreVal">0</span>
+      </div>
+      <div id="progWrap">
+        <div class="top sh1"><span>Words Caught</span><span><b id="caughtVal" style="color:#ffd447">0</b> / 14</span></div>
+        <div id="progTrack"><div id="progFill"></div><div class="ticks" id="ticks"></div></div>
+      </div>
+      <div class="cell">
+        <span class="k sh1">Streak</span>
+        <span class="v sm sh" id="streakVal">0</span>
+      </div>
+      <div class="cell">
+        <span class="k sh1">Near Misses</span>
+        <span class="v sm sh" id="missVal">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="meta">
+    <span class="pill sh1">Best Streak <b id="bestVal">0</b></span>
+    <button class="mcbtn sm" id="timerBtn">Timer: On</button>
+    <button class="mcbtn sm" id="revealBtn">Reveal Word</button>
+    <button class="mcbtn sm" id="endBtn">Finish Flight</button>
+  </div>
+
+  <div id="main">
+    <div id="left">
+      <div class="mcpanel" id="cuebox">
+        <div id="ballWrap" title="Click the Remembrall">
+          <svg id="broomSvg" viewBox="0 0 48 14" shape-rendering="crispEdges">
+            <rect x="2" y="6" width="6" height="3" fill="#d9d0b8"/>
+            <rect x="1" y="5" width="2" height="5" fill="#a89a78"/>
+            <rect x="0" y="7" width="2" height="1" fill="#c0b696"/>
+            <rect x="8" y="6" width="30" height="2" fill="#9a6630"/>
+            <rect x="38" y="5" width="9" height="2" fill="#5c3a17"/>
+            <rect x="8" y="8" width="30" height="1" fill="#6f4720"/>
+          </svg>
+          <svg id="ballSvg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <rect x="5" y="1" width="6" height="1" fill="#e6ecff"/>
+            <rect x="3" y="2" width="10" height="2" fill="#e6ecff"/>
+            <rect x="2" y="4" width="12" height="8" fill="#e6ecff"/>
+            <rect x="3" y="12" width="10" height="2" fill="#e6ecff"/>
+            <rect x="5" y="14" width="6" height="1" fill="#e6ecff"/>
+            <g class="glassg">
+              <rect x="4" y="4" width="8" height="7" class="glass" fill="#cfd8f2"/>
+              <rect x="3" y="5" width="10" height="5" class="glass" fill="#cfd8f2"/>
+              <rect x="5" y="11" width="6" height="1" class="glass" fill="#cfd8f2"/>
+            </g>
+            <rect x="4" y="3" width="3" height="1" fill="#ffffff"/>
+            <rect x="3" y="4" width="2" height="1" fill="#ffffff"/>
+            <rect x="10" y="11" width="3" height="1" fill="#aab3cc" opacity=".6"/>
+          </svg>
+        </div>
+        <div id="cuecard">
+          <span id="cuePart" class="sh1">The Remembrall</span>
+          <div id="cueIcon"></div>
+          <span id="posChip" style="display:none"></span>
+          <div id="cueText" class="sh1 lower">Click the Remembrall<br>to start the lesson</div>
+          <div id="cueMoment" class="lower"></div>
+          <div id="timeWrap" style="visibility:hidden">
+            <div id="timeTrack"><div id="timeFill"></div></div>
+            <div id="timeTxt" class="sh1">25s</div>
+          </div>
+          <div id="cueHint" class="sh1"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="right">
+      <div class="gridsec">
+        <div class="secthead">
+          <span class="tx sh1">The Sky Over Hogwarts</span>
+          <span class="ln"></span>
+          <span class="tx sh1" id="arcLabel">Afternoon &middot; The Flying Lesson</span>
+        </div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="hotwrap">
+    <div id="hotbar"></div>
+  </div>
+</section>
+
+<!-- ============ END ============ -->
+<section class="screen" id="end">
+  <div class="mcpanel" style="max-width:1150px;text-align:center;position:relative;overflow:hidden">
+    <h1 class="sh" id="endTitle">Remembrall Caught</h1>
+    <p class="tag sh1" id="endSub"></p>
+    <div id="endStats"></div>
+    <p class="sh1" style="font-size:12.5px;color:var(--gold);margin-top:20px">All 14 Words of Chapter 9</p>
+    <div id="endGrid"></div>
+    <p class="note" id="endNote" style="max-width:620px;margin:16px auto 0"></p>
+    <div style="margin-top:22px">
+      <button class="mcbtn go" id="againBtn">Fly It Again</button>
+      <button class="mcbtn" id="homeBtn">Back to Start</button>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   1. PIXEL PALETTE + 12x12 ICONS
+   Every icon is hand-plotted as a character grid, so the whole
+   game ships as one file with no image, font, or network request.
+   ============================================================ */
+var PAL = {
+  ".":null,
+  k:"#12121a", w:"#ffffff", c:"#d9d0b8", C:"#a89a78",
+  s:"#c9cede", S:"#7c8496", x:"#2a2f42", X:"#161a28",
+  g:"#ffd447", G:"#b8860d", y:"#fff0a8",
+  n:"#9a6630", N:"#5c3a17",
+  l:"#a9d8ff", b:"#5b7fd4", B:"#2a3f78",
+  p:"#8f6fd8", P:"#4a3080",
+  h:"#e8b58a", H:"#c08d64",
+  r:"#e0685a"
+};
+
+var ICONS = {
+  /* boastful — a speech bubble with a star in it */
+  boast:[
+    "............",
+    ".cccccccccc.",
+    ".cCCCCCCCCc.",
+    ".cC..gg..Cc.",
+    ".cC.gggg.Cc.",
+    ".cCggggggCc.",
+    ".cC.gggg.Cc.",
+    ".cC.g..g.Cc.",
+    ".cCCCCCCCCc.",
+    ".cccccccccc.",
+    "..cc........",
+    ".c.........."],
+  /* quaver — three trembling sound lines */
+  quaver:[
+    "............",
+    "..l....l....",
+    ".l.l..l.l...",
+    "l...ll...l..",
+    "............",
+    "..s....s....",
+    ".s.s..s.s...",
+    "s...ss...s..",
+    "............",
+    "..l....l....",
+    ".l.l..l.l...",
+    "l...ll...l.."],
+  /* hovering — a broom holding still, with hover lines under it */
+  hover:[
+    "............",
+    "............",
+    "..........N.",
+    ".........nn.",
+    "........nn..",
+    "..nnnnnnn...",
+    ".ccnn.......",
+    "cccc........",
+    ".cc.........",
+    "............",
+    "..llll.ll...",
+    "...ll.llll.."],
+  /* sneer — a face with one side of the mouth curled up */
+  sneer:[
+    "............",
+    "...hhhhhh...",
+    "..hhhhhhhh..",
+    "..hkhhhhkh..",
+    "..hkhhhhkh..",
+    "..hhhhhhhh..",
+    "..hhhhhhkh..",
+    "..hhhhhkhh..",
+    "..hhkkkhhh..",
+    "..hhhhhhhh..",
+    "...HHHHHH...",
+    "............"],
+  /* mingled — two streams running together into one */
+  mingle:[
+    "............",
+    ".bb.........",
+    "..bb........",
+    "...bb...gg..",
+    "....bb.gg...",
+    ".....bgg....",
+    ".....pp.....",
+    ".....pp.....",
+    "....pppp....",
+    "...pppppp...",
+    "....pppp....",
+    "............"],
+  /* steep — a very sharp dive arrow */
+  steep:[
+    "..gg........",
+    "..gg........",
+    "...gg.......",
+    "...gg.......",
+    "....gg......",
+    "....gg......",
+    ".....gg.....",
+    ".....gg.....",
+    "..gggggg....",
+    "...gggg.....",
+    "....gg......",
+    "............"],
+  /* triumphant — a raised trophy */
+  trophy:[
+    "............",
+    ".gggggggggg.",
+    ".gGGGGGGGGg.",
+    "gg.gggggg.gg",
+    "gg.gggggg.gg",
+    ".g.gggggg.g.",
+    "....gggg....",
+    ".....gg.....",
+    "....GGGG....",
+    "...GGGGGG...",
+    "..GGGGGGGG..",
+    "............"],
+  /* nimbus — a sleek racing broom at speed */
+  broom:[
+    "............",
+    "..........N.",
+    ".........nn.",
+    "........nn..",
+    ".......nn...",
+    "......nn....",
+    ".ccccn......",
+    "cccccc......",
+    ".cccc.......",
+    "..cc........",
+    ".l..l..l....",
+    "l..l..l....."],
+  /* looming — a shadow filling the frame, two eyes in it */
+  loom:[
+    "............",
+    "....xxxx....",
+    "...xxxxxx...",
+    "..xxxxxxxx..",
+    "..xxxxxxxx..",
+    ".xxggxxggxx.",
+    ".xxggxxggxx.",
+    ".xxxxxxxxxx.",
+    ".XXXXXXXXXX.",
+    "XXXXXXXXXXXX",
+    "XXXXXXXXXXXX",
+    "XXXXXXXXXXXX"],
+  /* interfering — a hand reaching in where it was not asked */
+  hand:[
+    "............",
+    "....h.h.h...",
+    "...hhhhhhh..",
+    "...hhhhhhh..",
+    ".hhhhhhhhh..",
+    ".hhhhhhhhh..",
+    "..hhhhhhhh..",
+    "...hhhhhh...",
+    "....hhhh....",
+    "....hhhh....",
+    "....CCCC....",
+    "............"],
+  /* shrilly — a horn throwing sharp, high sound spikes */
+  shrill:[
+    "............",
+    "..ss........",
+    "..sss.......",
+    "..ssss..l...",
+    "..sssss.l.l.",
+    "..ssssslll.l",
+    "..ssssslll.l",
+    "..sssss.l.l.",
+    "..ssss..l...",
+    "..sss.......",
+    "..ss........",
+    "............"],
+  /* mended — a bandaged wrist */
+  bandage:[
+    "............",
+    "....hhhh....",
+    "....hhhh....",
+    "...chhhhc...",
+    "..cccccccc..",
+    "..cwwwwwwc..",
+    "..cwwggwwc..",
+    "..cwggggwc..",
+    "..cwwggwwc..",
+    "..cccccccc..",
+    "....hhhh....",
+    "............"],
+  /* scurried — quick small steps with motion trails */
+  scurry:[
+    "............",
+    ".l..........",
+    "..l...xx....",
+    "...l..xxx...",
+    "......xxx...",
+    ".......x....",
+    ".l..........",
+    "..l.....xx..",
+    "...l....xxx.",
+    "........xxx.",
+    ".........x..",
+    "............"],
+  /* petrified — a face frozen to stone, eyes wide */
+  stoneface:[
+    "............",
+    "...SSSSSS...",
+    "..SssssssS..",
+    "..Ssssssss..",
+    "..SwwSSwwS..",
+    "..SwkSSwkS..",
+    "..Ssssssss..",
+    "..Ssswwsss..",
+    "..Sswwwwss..",
+    "..Ssswwsss..",
+    "...SSSSSS...",
+    "............"]
+};
+
+/* ============================================================
+   2. WORDS — definitions are copied verbatim from the Chapter 9
+   vocabulary bank and must not be reworded. The moment line is
+   flavour drawn from the chapter itself, with no invented quotes.
+   ============================================================ */
+var WORDS = [
+  { word:"Boastful", pos:"adjective", part:1, icon:"boast",
+    def:"Talking with too much pride about yourself or your own abilities",
+    moment:"Malfoy's long stories about flying, always ending with him narrowly escaping Muggles in helicopters." },
+  { word:"Quaver", pos:"noun", part:1, icon:"quaver",
+    def:"A shake or tremble in someone's voice, often caused by fear or nervousness",
+    moment:"What Harry heard in Neville's voice when the brooms would not come up." },
+  { word:"Hovering", pos:"verb", part:1, icon:"hover",
+    def:"Staying in one place in the air, without rising, falling, or moving forward",
+    moment:"Malfoy holding the Remembrall, level with the topmost branches of an oak." },
+  { word:"Sneer", pos:"verb", part:1, icon:"sneer",
+    def:"To smile or speak in a scornful, mocking way that shows contempt",
+    moment:"What Malfoy tried on Harry in mid-air, while looking worried." },
+  { word:"Mingled", pos:"verb", part:1, icon:"mingle",
+    def:"Mixed or blended together with something else",
+    moment:"Wind whistling in Harry's ears, mixed with the screams of the people watching." },
+  { word:"Steep", pos:"adjective", part:1, icon:"steep",
+    def:"Rising or falling at a very sharp angle, almost straight up or down",
+    moment:"Harry's dive after the falling glass ball, pulling up a foot from the ground." },
+  { word:"Triumphant", pos:"adjective", part:1, icon:"trophy",
+    def:"Feeling or showing great pride and joy after winning or succeeding",
+    moment:"The faces of Malfoy, Crabbe and Goyle as Harry was marched away to the castle." },
+  { word:"Nimbus", pos:"noun", part:1, icon:"broom",
+    def:"Here, the brand name of a fast racing broomstick; a nimbus can also mean a glowing cloud of light around something",
+    moment:"The broom Wood wanted to get for his brand new Seeker." },
+  { word:"Looming", pos:"verb", part:2, icon:"loom",
+    def:"Appearing as a large, shadowy shape that seems to be getting closer, often in a frightening way",
+    moment:"Malfoy's sneering face coming up out of the darkness while Harry lay awake." },
+  { word:"Interfering", pos:"adjective", part:2, icon:"hand",
+    def:"Getting involved in someone else's business in an unwanted way",
+    moment:"Harry's word for Hermione as she tried to stop the two of them leaving." },
+  { word:"Shrilly", pos:"adverb", part:2, icon:"shrill",
+    def:"In a high-pitched, piercing voice",
+    moment:"How Hermione asked what to do, locked out of the common room by an empty painting." },
+  { word:"Mended", pos:"verb", part:2, icon:"bandage",
+    def:"Fixed or repaired something that was broken or injured",
+    moment:"What Madam Pomfrey did to Neville's wrist in about a minute." },
+  { word:"Scurried", pos:"verb", part:2, icon:"scurry",
+    def:"Ran with short, quick, hurried steps, often out of fear",
+    moment:"The four of them moving silently away from Filch's voice in the trophy room." },
+  { word:"Petrified", pos:"adjective", part:2, icon:"stoneface",
+    def:"So frightened that you cannot move; frozen with fear",
+    moment:"Facing the dog that filled the whole space between ceiling and floor." }
+];
+
+/* Two decorative block veins, matched to the two halves of the
+   chapter. These are scenery only - there is no team scoring. */
+var VEINS = {
+  1:{ label:"The Flying Lesson",
+      base:["#46568a","#3e4d7c","#506192","#38466f","#4a5a86"],
+      ore:["#6b4d08","#c99a18","#ffd447","#fff0a8"], hex:"#ffd447" },
+  2:{ base:["#2d3348","#272d40","#343b52","#212636","#30364c"],
+      label:"The Midnight Duel",
+      ore:["#3f4756","#7c8496","#c9cede","#ffffff"], hex:"#c9cede" }
+};
+
+var BASE_PTS = 10, CLEAN_BONUS = 5, SPEED_BONUS = 5, MISS_PENALTY = 3;
+var ROUND_MS = 25000, SPEED_MS = 15000;
+
+/* ============================================================
+   3. PIXEL RENDERERS — textures are inline SVG data URIs.
+   Nothing is fetched from the network.
+   ============================================================ */
+function svgURI(inner, w, h){
+  var s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" shape-rendering="crispEdges">'+inner+'</svg>';
+  return 'url("data:image/svg+xml,' + encodeURIComponent(s) + '")';
+}
+function rng(seed){
+  var s = (seed*2654435761) >>> 0;
+  return function(){ s = (s*1664525 + 1013904223) >>> 0; return s / 4294967296; };
+}
+function iconURI(key){
+  var grid = ICONS[key], inner = "", N = grid.length;
+  for(var y=0;y<N;y++){
+    var row = grid[y];
+    for(var x=0;x<row.length;x++){
+      var col = PAL[row.charAt(x)];
+      if(!col) continue;
+      inner += '<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+col+'"/>';
+    }
+  }
+  return svgURI(inner, N, N);
+}
+/* a floating sky block: mottled stone with bright veins running through it */
+function blockURI(seed, part){
+  var r = rng(seed), N = 16, inner = "";
+  var V = VEINS[part], base = V.base, ore = V.ore;
+  var cell = [];
+  for(var i=0;i<N*N;i++) cell.push(base[Math.floor(r()*base.length)]);
+  var blobs = 4 + Math.floor(r()*3);
+  for(var b=0;b<blobs;b++){
+    var cx = 2 + Math.floor(r()*(N-5)), cy = 2 + Math.floor(r()*(N-5));
+    var w = 2 + Math.floor(r()*2), h = 2 + Math.floor(r()*2);
+    for(var yy=0;yy<h;yy++) for(var xx=0;xx<w;xx++){
+      if(r()<0.18) continue;
+      var px = cx+xx, py = cy+yy;
+      if(px<0||py<0||px>=N||py>=N) continue;
+      cell[py*N+px] = (yy===0&&xx===0) ? ore[3] : (r()<0.34?ore[1]:ore[2]);
+    }
+    if(cy+h<N) for(var x2=0;x2<w;x2++){ var p2=(cy+h)*N+cx+x2; if(cell[p2]) cell[p2]=ore[0]; }
+  }
+  for(var y=0;y<N;y++) for(var x=0;x<N;x++)
+    inner += '<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+cell[y*N+x]+'"/>';
+  inner += '<rect x="0" y="0" width="16" height="1" fill="#ffffff" opacity=".18"/>';
+  inner += '<rect x="0" y="0" width="1" height="16" fill="#ffffff" opacity=".18"/>';
+  inner += '<rect x="0" y="15" width="16" height="1" fill="#000000" opacity=".36"/>';
+  inner += '<rect x="15" y="0" width="1" height="16" fill="#000000" opacity=".36"/>';
+  return svgURI(inner, N, N);
+}
+/* crack overlay for a near miss */
+function crackURI(stage, seed){
+  var r = rng(seed*77 + stage), N = 16, inner = "";
+  var lines = stage * 2 + 1;
+  for(var i=0;i<lines;i++){
+    var x = 8, y = 8, len = 5 + Math.floor(r()*5);
+    var dx = r()<0.5?-1:1, dy = r()<0.5?-1:1;
+    for(var j=0;j<len;j++){
+      inner += '<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="#05070d" opacity=".85"/>';
+      if(r()<0.62) x += dx; else y += dy;
+      if(r()<0.2) dx = -dx;
+      if(x<0||y<0||x>=N||y>=N) break;
+    }
+  }
+  return svgURI(inner, N, N);
+}
+
+/* ============================================================
+   4. SOUND — WebAudio only. No audio files.
+   ============================================================ */
+var actx = null, noiseBuf = null;
+function AC(){
+  if(!actx){
+    var C = window.AudioContext || window.webkitAudioContext;
+    if(!C) return null;
+    try{ actx = new C(); }catch(e){ return null; }
+  }
+  if(actx.state === "suspended" && actx.resume) actx.resume();
+  return actx;
+}
+function noise(){
+  var c = AC(); if(!c) return null;
+  if(!noiseBuf){
+    noiseBuf = c.createBuffer(1, Math.floor(c.sampleRate * 0.6), c.sampleRate);
+    var d = noiseBuf.getChannelData(0);
+    for(var i=0;i<d.length;i++) d[i] = Math.random()*2 - 1;
+  }
+  return noiseBuf;
+}
+function whoosh(f1, f2, dur, vol, q){
+  var c = AC(); if(!c) return;
+  var buf = noise(); if(!buf) return;
+  var src = c.createBufferSource(); src.buffer = buf;
+  var flt = c.createBiquadFilter(); flt.type = "bandpass";
+  flt.frequency.setValueAtTime(f1, c.currentTime);
+  flt.frequency.exponentialRampToValueAtTime(f2, c.currentTime + dur);
+  flt.Q.value = q || 1.2;
+  var g = c.createGain();
+  g.gain.setValueAtTime(vol, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+  src.connect(flt); flt.connect(g); g.connect(c.destination);
+  src.start(); src.stop(c.currentTime + dur + 0.02);
+}
+function beep(freq, at, dur, type, vol){
+  var c = AC(); if(!c) return;
+  var o = c.createOscillator(), g = c.createGain();
+  o.type = type || "square";
+  o.frequency.setValueAtTime(freq, c.currentTime + at);
+  g.gain.setValueAtTime(0.0001, c.currentTime + at);
+  g.gain.exponentialRampToValueAtTime(vol || 0.1, c.currentTime + at + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + at + dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(c.currentTime + at); o.stop(c.currentTime + at + dur + 0.02);
+}
+var SFX = {
+  dive:   function(){ whoosh(240, 1900, 0.42, 0.4, 0.8); },
+  catchb: function(){ whoosh(1500, 300, 0.26, 0.45, 1.1);
+                      beep(1046, 0, 0.07, "square", 0.09);
+                      beep(1568, 0.06, 0.09, "square", 0.08);
+                      beep(2093, 0.13, 0.12, "sine", 0.06); },
+  clip:   function(){ whoosh(400, 130, 0.15, 0.5, 2.2); beep(88, 0, 0.12, "square", 0.09); },
+  lift:   function(){ [523,659,784,1047].forEach(function(f,i){ beep(f, i*0.09, 0.24, "square", 0.09); }); },
+  chime:  function(){ [392,523,659,880].forEach(function(f,i){ beep(f, i*0.11, 0.5, "sine", 0.07); }); },
+  alarm:  function(){ [660,520,660,520].forEach(function(f,i){ beep(f, i*0.13, 0.14, "square", 0.09); }); },
+  night:  function(){ [392,330,262,196].forEach(function(f,i){ beep(f, i*0.16, 0.55, "sine", 0.085); });
+                      whoosh(320, 90, 0.9, 0.22, 1.4); },
+  win:    function(){ [523,659,784,1047,1319].forEach(function(f,i){ beep(f, i*0.11, 0.4, "square", 0.1); });
+                      beep(2093, 0.6, 0.8, "sine", 0.07); },
+  blip:   function(){ beep(260, 0, 0.06, "square", 0.05); }
+};
+
+/* ============================================================
+   5. STATE — one shared class score, nothing per team
+   ============================================================ */
+var S = null;
+function fresh(){
+  return {
+    phase:"idle",              /* idle | cue | done */
+    blocks: WORDS.map(function(w,i){
+      return { i:i, word:w.word, def:w.def, moment:w.moment, pos:w.pos,
+               part:w.part, icon:w.icon, seed:i*97+13,
+               cracks:0, caught:false, clean:false, helped:false };
+    }),
+    queue: [], target:null,
+    score:0, caught:0, misses:0, streak:0, best:0, cleanCount:0,
+    timerOn:true, nightFell:false,
+    tEnd:0, tick:null
+  };
+}
+
+/* ============================================================
+   6. DOM helpers
+   ============================================================ */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function show(id){
+  ["title","game","end"].forEach(function(s){ $(s).classList.remove("active"); });
+  $(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+function rectOf(el){ return el.getBoundingClientRect(); }
+
+/* ============================================================
+   7. SCENE — stars, clouds, motes, title sampler
+   ============================================================ */
+(function stars(){
+  var host = $("stars");
+  for(var i=0;i<130;i++){
+    var s = document.createElement("div");
+    s.className = "star" + (Math.random()<0.16 ? " big" : "");
+    s.style.left = (Math.random()*100) + "%";
+    s.style.top  = (Math.random()*78) + "%";
+    s.style.animationDuration = (1.1 + Math.random()*2.8) + "s";
+    s.style.animationDelay = (Math.random()*3) + "s";
+    host.appendChild(s);
+  }
+})();
+(function clouds(){
+  var host = $("clouds");
+  for(var i=0;i<5;i++){
+    var c = document.createElement("div");
+    c.className = "cloud";
+    c.style.width = (110 + Math.random()*230) + "px";
+    c.style.top = (14 + Math.random()*54) + "%";
+    c.style.animationDuration = (52 + Math.random()*70) + "s";
+    c.style.animationDelay = (-Math.random()*60) + "s";
+    host.appendChild(c);
+  }
+})();
+(function motes(){
+  var host = $("ballWrap");
+  var marks = ["+","*","x","o",".","/"];
+  for(var i=0;i<7;i++){
+    var g = document.createElement("span");
+    g.className = "mote";
+    g.textContent = marks[i % marks.length];
+    g.style.left = (24 + Math.random()*52) + "%";
+    g.style.bottom = "26px";
+    g.style.animationDelay = (Math.random()*2.8) + "s";
+    host.appendChild(g);
+  }
+})();
+(function titleBlocks(){
+  var host = $("titleBlocks");
+  for(var i=0;i<6;i++){
+    var d = document.createElement("div");
+    d.style.cssText = "width:62px;height:62px;box-shadow:0 0 0 3px #000;image-rendering:pixelated;background-size:100% 100%";
+    d.style.backgroundImage = blockURI(i*37+9, (i%2)+1);
+    host.appendChild(d);
+  }
+})();
+(function ticks(){
+  var host = $("ticks");
+  for(var i=0;i<14;i++) host.appendChild(document.createElement("i"));
+})();
+
+/* ============================================================
+   8. GRID
+   ============================================================ */
+function buildGrid(){
+  var g = $("grid");
+  g.innerHTML = "";
+  var order = shuffle(S.blocks.slice());
+  order.forEach(function(b){
+    var el = document.createElement("button");
+    el.type = "button";
+    el.className = "blk";
+    el.id = "b"+b.i;
+    el.style.backgroundImage = blockURI(b.seed, b.part);
+    el.style.animationDelay = (Math.random()*4).toFixed(2) + "s";
+    el.innerHTML = '<div class="ico"></div><div class="crk"></div><span class="lbl sh1">'+esc(b.word)+'</span>';
+    el.querySelector(".ico").style.backgroundImage = iconURI(b.icon);
+    el.addEventListener("click", function(){ onBlock(b.i); });
+    g.appendChild(el);
+  });
+  buildHotbar();
+}
+function buildHotbar(){
+  var h = $("hotbar");
+  h.innerHTML = "";
+  for(var i=0;i<WORDS.length;i++){
+    var s = document.createElement("div");
+    s.className = "hslot"; s.id = "hs"+i;
+    s.innerHTML = '<div class="hi"></div>';
+    h.appendChild(s);
+  }
+}
+function paintBlock(b){
+  var el = $("b"+b.i);
+  if(!el) return;
+  el.querySelector(".crk").style.backgroundImage = b.cracks ? crackURI(b.cracks, b.seed) : "none";
+  if(b.caught) el.classList.add("mined");
+}
+function paintHud(){
+  $("scoreVal").textContent = S.score;
+  $("caughtVal").textContent = S.caught;
+  $("streakVal").textContent = S.streak;
+  $("missVal").textContent = S.misses;
+  $("bestVal").textContent = S.best;
+  $("progFill").style.width = Math.round((S.caught / WORDS.length) * 100) + "%";
+}
+function bumpScore(){
+  var v = $("scoreVal");
+  v.classList.remove("bump"); void v.offsetWidth; v.classList.add("bump");
+}
+
+/* ============================================================
+   9. EFFECTS
+   ============================================================ */
+function particles(el, part){
+  var r = rectOf(el), host = $("fx"), cols = VEINS[part].ore.concat(VEINS[part].base.slice(0,2));
+  for(var i=0;i<18;i++){
+    var p = document.createElement("div");
+    p.className = "part";
+    p.style.background = cols[i % cols.length];
+    p.style.left = (r.left + r.width/2 - 4 + (Math.random()*r.width*0.7 - r.width*0.35)) + "px";
+    p.style.top  = (r.top  + r.height/2 - 4 + (Math.random()*r.height*0.6 - r.height*0.3)) + "px";
+    p.style.setProperty("--dx", (Math.random()*130 - 65) + "px");
+    p.style.setProperty("--dy", (30 + Math.random()*90) + "px");
+    host.appendChild(p);
+    reap(p, 950);
+  }
+}
+function orbsToScore(el, n){
+  var from = rectOf(el), to = rectOf($("scoreVal")), host = $("fx");
+  for(var i=0;i<(n||6);i++){
+    var o = document.createElement("div");
+    o.className = "orb";
+    o.style.left = (from.left + from.width/2) + "px";
+    o.style.top  = (from.top + from.height/2) + "px";
+    host.appendChild(o);
+    (function(orb, d){
+      setTimeout(function(){
+        orb.style.transform = "translate(" + (to.left + to.width/2 - parseFloat(orb.style.left) + (Math.random()*24-12)) +
+                              "px," + (to.top + to.height/2 - parseFloat(orb.style.top) + (Math.random()*18-9)) + "px)";
+        orb.style.opacity = "0";
+      }, d);
+      reap(orb, d + 740);
+    })(o, i*55);
+  }
+}
+function floatPts(el, txt, bad){
+  var r = rectOf(el), p = document.createElement("div");
+  p.className = "pts sh" + (bad ? " bad" : "");
+  p.textContent = txt;
+  p.style.left = (r.left + r.width/2 - 24) + "px";
+  p.style.top  = (r.top - 8) + "px";
+  $("fx").appendChild(p);
+  reap(p, 1050);
+}
+function reap(el, ms){ setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, ms); }
+function toast(line1, line2, iconKey, bad){
+  var t = document.createElement("div");
+  t.className = "toast" + (bad ? " bad" : "");
+  t.innerHTML = '<div class="ti"></div><div class="tt"><div class="t1 sh1">'+esc(line1)+
+                '</div><div class="t2 sh1">'+esc(line2)+'</div></div>';
+  if(iconKey) t.querySelector(".ti").style.backgroundImage = iconURI(iconKey);
+  $("toasts").appendChild(t);
+  setTimeout(function(){ t.classList.add("out"); }, 2500);
+  reap(t, 3000);
+}
+
+/* ------------------------------------------------------------
+   The sky is the through-line: it starts on the afternoon of the
+   flying lesson and burns down to midnight as the class works,
+   so the two halves of the chapter read as one run.
+   ------------------------------------------------------------ */
+function paintSky(){
+  var p1 = S.blocks.filter(function(b){ return b.part === 1 && b.caught; }).length;
+  var p1all = S.blocks.filter(function(b){ return b.part === 1; }).length;
+  var t = S.caught / S.blocks.length;
+  $("dusk").style.opacity = String(Math.max(0, 1 - (p1all ? p1/p1all : 1)));
+  $("stars").style.opacity = String(0.28 + t * 0.72);
+  $("moon").style.top = (17 - t * 12).toFixed(1) + "%";
+}
+function nightfall(){
+  S.nightFell = true;
+  var f = document.createElement("div");
+  f.id = "nightflash";
+  document.body.appendChild(f);
+  setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 1700);
+  SFX.night();
+  toast("Midnight", "The lesson is over — the duel is on", "loom", false);
+}
+
+/* ============================================================
+   10. TIMER
+   ============================================================ */
+function startTimer(){
+  stopTimer();
+  var wrap = $("timeWrap");
+  if(!S.timerOn){ wrap.style.visibility = "hidden"; return; }
+  wrap.style.visibility = "visible";
+  S.tEnd = Date.now() + ROUND_MS;
+  $("timeFill").classList.remove("warn");
+  S.tick = setInterval(function(){
+    var left = S.tEnd - Date.now();
+    if(left <= 0){ stopTimer(); timeUp(); return; }
+    $("timeFill").style.width = Math.max(0, (left / ROUND_MS) * 100) + "%";
+    $("timeTxt").textContent = Math.ceil(left/1000) + "s";
+    if(left <= 7000) $("timeFill").classList.add("warn");
+  }, 100);
+}
+function stopTimer(){
+  if(S.tick){ clearInterval(S.tick); S.tick = null; }
+}
+function timeLeft(){ return S.timerOn ? Math.max(0, S.tEnd - Date.now()) : ROUND_MS; }
+function timeUp(){
+  if(S.phase !== "cue") return;
+  SFX.alarm();
+  glowRed();
+  revealTarget(true);
+}
+function glowRed(){
+  var w = $("ballWrap");
+  w.classList.add("red");
+  setTimeout(function(){ w.classList.remove("red"); }, 1400);
+}
+
+/* ============================================================
+   11. ROUND FLOW
+   ============================================================ */
+/* The round runs the way the chapter runs: every word from the
+   flying lesson, then straight on into the midnight duel. Words
+   are shuffled inside each half, but the arc never breaks. */
+function buildQueue(){
+  var live = S.blocks.filter(function(b){ return !b.caught; });
+  function half(n){
+    return shuffle(live.filter(function(b){ return b.part === n; })).map(function(b){ return b.i; });
+  }
+  return half(1).concat(half(2));
+}
+function startRound(){
+  if(S.phase !== "idle") return;
+  S.queue = buildQueue();
+  SFX.chime();
+  $("ballWrap").classList.add("dead");
+  nextCue();
+}
+function nextCue(){
+  stopTimer();
+  var left = S.blocks.filter(function(b){ return !b.caught; });
+  if(!left.length){ finish(); return; }
+  S.queue = S.queue.filter(function(i){ return !S.blocks[i].caught; });
+  if(!S.queue.length) S.queue = buildQueue();
+  S.target = S.blocks[S.queue.shift()];
+  S.phase = "cue";
+
+  var night = (S.target.part === 2);
+  if(night && !S.nightFell) nightfall();
+  $("arcLabel").textContent = night ? "Midnight · The Duel" : "Afternoon · The Flying Lesson";
+  $("arcLabel").classList[night ? "add" : "remove"]("night");
+  $("cuePart").textContent = VEINS[S.target.part].label;
+  var ic = $("cueIcon");
+  ic.style.backgroundImage = iconURI(S.target.icon);
+  ic.classList.remove("pop"); void ic.offsetWidth; ic.classList.add("pop");
+  var chip = $("posChip");
+  chip.style.display = "inline-block";
+  chip.textContent = S.target.pos;
+  $("cueText").textContent = S.target.def;
+  $("cueMoment").textContent = S.target.moment;
+  $("cueHint").textContent = "Students say the word — you click the block";
+  $("timeFill").style.width = "100%";
+  $("timeTxt").textContent = "25s";
+  startTimer();
+}
+function onBlock(i){
+  var b = S.blocks[i];
+  if(S.phase !== "cue"){ SFX.blip(); return; }
+  if(b.caught){ SFX.blip(); return; }
+  if(b.word === S.target.word) catchWord(b); else clipBlock(b);
+}
+function clipBlock(b){
+  b.cracks = Math.min(3, b.cracks + 1);
+  S.misses += 1;
+  S.streak = 0;
+  S.score = Math.max(0, S.score - MISS_PENALTY);
+  paintBlock(b);
+  paintHud();
+  var el = $("b"+b.i);
+  el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+  floatPts(el, "-" + MISS_PENALTY, true);
+  SFX.clip();
+  glowRed();
+  toast("Not that one", b.word.toUpperCase() + " stays in the sky", null, true);
+}
+function catchWord(b, helped){
+  var el = $("b"+b.i);
+  var clean = (b.cracks === 0) && !helped;
+  var fast = !helped && S.timerOn && timeLeft() > SPEED_MS;
+  var pts = helped ? 0 : (BASE_PTS + (clean ? CLEAN_BONUS : 0) + (fast ? SPEED_BONUS : 0));
+
+  /* lock the board while the block breaks so a stray click cannot score twice */
+  S.phase = "hold";
+  stopTimer();
+
+  b.caught = true; b.clean = clean; b.helped = !!helped;
+  S.caught += 1;
+  if(clean) S.cleanCount += 1;
+  if(helped){ S.streak = 0; }
+  else {
+    S.score += pts;
+    S.streak += 1;
+    if(S.streak > S.best) S.best = S.streak;
+    if(S.streak > 0 && S.streak % 3 === 0){
+      S.score += 5;
+      toast("Streak of " + S.streak, "Bonus +5 to the class", "trophy", false);
+    }
+  }
+
+  particles(el, b.part);
+  if(pts > 0){ orbsToScore(el, clean ? 8 : 5); floatPts(el, "+" + pts); }
+  el.classList.add("breaking");
+  SFX.dive();
+  setTimeout(function(){
+    el.classList.remove("breaking");
+    paintBlock(b);
+    SFX.catchb();
+  }, 340);
+  if(pts > 0) setTimeout(SFX.lift, 440);
+
+  if(helped) toast("The Remembrall glowed red", b.word.toUpperCase() + " — shown to the class", b.icon, true);
+  else toast(clean ? (fast ? "Caught clean and fast!" : "Caught clean!") : "Word caught!", b.word.toUpperCase(), b.icon, false);
+
+  var hs = $("hs" + (S.caught - 1));
+  if(hs){ hs.classList.add("full"); hs.querySelector(".hi").style.backgroundImage = iconURI(b.icon); }
+
+  paintHud();
+  paintSky();
+  if(pts > 0) bumpScore();
+  setTimeout(function(){
+    if(S.caught >= S.blocks.length) finish(); else nextCue();
+  }, 620);
+}
+function revealTarget(fromTimer){
+  if(S.phase !== "cue" || !S.target) return;
+  var b = S.target;
+  stopTimer();
+  var el = $("b"+b.i);
+  el.classList.remove("reveal"); void el.offsetWidth; el.classList.add("reveal");
+  if(!fromTimer) SFX.alarm();
+  setTimeout(function(){ el.classList.remove("reveal"); catchWord(b, true); }, 900);
+  S.phase = "hold";
+}
+
+/* ============================================================
+   12. END — one shared result, no ranking of anybody
+   ============================================================ */
+function finish(){
+  stopTimer();
+  S.phase = "done";
+
+  var grid = $("endGrid");
+  grid.innerHTML = "";
+  S.blocks.forEach(function(b){
+    var c = document.createElement("div");
+    c.className = "ecell";
+    c.style.borderColor = b.caught ? VEINS[b.part].hex : "#3d4a78";
+    c.innerHTML = '<div class="ei"></div><div class="ew sh1">'+esc(b.word)+'</div>';
+    c.querySelector(".ei").style.backgroundImage = b.caught ? iconURI(b.icon) : blockURI(b.seed, b.part);
+    if(!b.caught) c.style.opacity = ".4";
+    grid.appendChild(c);
+  });
+
+  var stats = $("endStats");
+  stats.innerHTML = "";
+  [["Class Score", S.score], ["Words Caught", S.caught + " / " + WORDS.length],
+   ["Best Streak", S.best], ["Clean Catches", S.cleanCount]].forEach(function(p){
+    var d = document.createElement("div");
+    d.className = "stat sh1";
+    d.innerHTML = '<span class="k">'+esc(p[0])+'</span><span class="v">'+esc(p[1])+'</span>';
+    stats.appendChild(d);
+  });
+
+  var all = (S.caught === S.blocks.length);
+  $("endTitle").textContent = all ? "Remembrall Caught!" : "Flight Ended";
+  $("endSub").textContent = all
+    ? "The class cleared the whole sky — all 14 words of Chapter 9"
+    : S.caught + " of " + WORDS.length + " words cleared so far";
+  $("endNote").textContent = all
+    ? "Every block came down together. Read the 14 words back through once as a class, then fly it again to beat the score."
+    : "Pick up where you left off — the words still in the sky are the ones worth another look.";
+  SFX.win();
+  fireworks();
+  show("end");
+}
+function fireworks(){
+  var host = $("end").querySelector(".mcpanel");
+  var cols = ["#ffd447","#fff0a8","#c9cede","#7fb4ff","#ffffff","#8f6fd8"];
+  for(var burst=0;burst<5;burst++){
+    (function(bn){
+      setTimeout(function(){
+        var cx = 15 + Math.random()*70, cy = 12 + Math.random()*40;
+        for(var i=0;i<22;i++){
+          var p = document.createElement("div");
+          p.className = "fw";
+          p.style.background = cols[Math.floor(Math.random()*cols.length)];
+          p.style.left = cx + "%"; p.style.top = cy + "%";
+          var a = Math.random()*Math.PI*2, d = 40 + Math.random()*90;
+          p.style.setProperty("--dx", Math.cos(a)*d + "px");
+          p.style.setProperty("--dy", Math.sin(a)*d + "px");
+          host.appendChild(p);
+          reap(p, 1600);
+        }
+      }, bn*420);
+    })(burst);
+  }
+}
+
+/* ============================================================
+   13. WIRING
+   ============================================================ */
+function boot(){
+  var keepTimer = S ? S.timerOn : true;
+  S = fresh();
+  S.timerOn = keepTimer;
+  buildGrid();
+  paintHud();
+  paintSky();
+  $("ballWrap").classList.remove("dead","red");
+  $("cuePart").textContent = "The Remembrall";
+  $("cueIcon").style.backgroundImage = "none";
+  $("posChip").style.display = "none";
+  $("cueText").innerHTML = "Click the Remembrall<br>to start the lesson";
+  $("cueMoment").textContent = "";
+  $("cueHint").textContent = "";
+  $("timeWrap").style.visibility = "hidden";
+  $("arcLabel").textContent = "Afternoon · The Flying Lesson";
+  $("arcLabel").classList.remove("night");
+  $("timerBtn").textContent = "Timer: " + (S.timerOn ? "On" : "Off");
+  show("game");
+}
+$("toGame").addEventListener("click", function(){ AC(); boot(); });
+$("ballWrap").addEventListener("click", startRound);
+$("timerBtn").addEventListener("click", function(){
+  S.timerOn = !S.timerOn;
+  this.textContent = "Timer: " + (S.timerOn ? "On" : "Off");
+  if(S.phase === "cue"){ if(S.timerOn) startTimer(); else { stopTimer(); $("timeWrap").style.visibility = "hidden"; } }
+  SFX.blip();
+});
+$("revealBtn").addEventListener("click", function(){ revealTarget(false); });
+$("endBtn").addEventListener("click", function(){ finish(); });
+$("againBtn").addEventListener("click", function(){ boot(); });
+$("homeBtn").addEventListener("click", function(){ stopTimer(); show("title"); });
+
+/* exposed so the build can be self-checked offline */
+window.__dive = {
+  WORDS:WORDS, ICONS:ICONS, VEINS:VEINS,
+  get state(){ return S; },
+  onBlock:onBlock, startRound:startRound, revealTarget:revealTarget,
+  buildQueue:buildQueue, finish:finish, boot:boot
+};
+
+})();
+</script>
+
+<!-- portfolio note: solo-play tip + rights -->
+<style>
+#pfn{position:fixed;right:14px;bottom:14px;z-index:99999;font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:#f3ead7}
+#pfn,#pfn *{font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;text-transform:none!important;letter-spacing:normal!important}
+#pfn .pfn-card{position:fixed;top:12px;right:12px;width:min(280px,calc(100vw - 24px));font-size:12.5px;background:rgba(12,8,24,.94);border:1px solid rgba(214,180,95,.55);border-radius:10px;padding:12px 14px 10px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#pfn .pfn-h{display:flex;justify-content:space-between;align-items:center;font-weight:600;color:#e9c96b;letter-spacing:.02em;margin-bottom:4px}
+#pfn button{background:none;border:0;color:#e9c96b;cursor:pointer;font:inherit;padding:2px 4px}
+#pfn .pfn-r{margin-top:8px;padding-top:6px;border-top:1px solid rgba(214,180,95,.25);font-size:11px;opacity:.7}
+#pfn .pfn-pill{display:none;width:34px;height:34px;border-radius:50%;background:rgba(12,8,24,.85);border:1px solid rgba(214,180,95,.55);font-weight:700;font-size:15px}
+#pfn.pfn-min .pfn-card{display:none}#pfn.pfn-min .pfn-pill{display:block}
+</style>
+<div id="pfn" role="complementary" aria-label="How to play solo">
+  <div class="pfn-card">
+    <div class="pfn-h"><span>Playing solo?</span><button type="button" aria-label="Hide tip" onclick="document.getElementById('pfn').classList.add('pfn-min')">&times;</button></div>
+    <div>You're the teacher. Press Kick Off, then click the Remembrall to start. Read the definition it shows and click the sky block with the matching word. Wrong blocks crack and cost points.</div>
+    <div class="pfn-r">&copy; 2026 Christine Peng. All rights reserved. Built for private, non-commercial classroom use. Harry Potter is &copy; J.K. Rowling / Warner Bros.</div>
+  </div>
+  <button type="button" class="pfn-pill" aria-label="Show tip" title="How to play solo" onclick="document.getElementById('pfn').classList.remove('pfn-min')">i</button>
+</div>
+<script>(function(){var n=document.getElementById('pfn');document.addEventListener('click',function(e){if(!n.contains(e.target))n.classList.add('pfn-min');},true);})();</script>
+</body>
+</html>
